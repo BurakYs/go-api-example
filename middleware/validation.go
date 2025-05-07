@@ -21,7 +21,7 @@ func ValidateQuery[T any]() gin.HandlerFunc {
 }
 
 func ValidateParams[T any]() gin.HandlerFunc {
-	return validate[T]("uri")
+	return validate[T]("params")
 }
 
 type normalizable interface {
@@ -38,7 +38,7 @@ func validate[T any](kind string) gin.HandlerFunc {
 			err = ctx.ShouldBindJSON(&data)
 		case "query":
 			err = ctx.ShouldBindQuery(&data)
-		case "uri":
+		case "params":
 			err = ctx.ShouldBindUri(&data)
 		}
 
