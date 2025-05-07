@@ -22,7 +22,7 @@ var Collections = struct {
 func SetupMongo() {
 	client, err := mongo.Connect(options.Client().ApplyURI(config.AppConfig.MongoURI))
 	if err != nil {
-		log.Fatal("Failed to connect to MongoDB:", err)
+		log.Fatalln("Failed to connect to MongoDB:", err)
 	}
 
 	Mongo = client
@@ -41,7 +41,7 @@ func SetupMongo() {
 	})
 
 	if err != nil {
-		log.Fatalf("Error creating indexes: %v", err)
+		log.Fatalln("Error creating indexes:", err)
 	}
 }
 
@@ -50,11 +50,10 @@ func DisconnectMongo() error {
 	defer cancel()
 
 	if err := Mongo.Disconnect(timeoutCtx); err != nil {
-		log.Printf("Error disconnecting from MongoDB: %v", err)
+		log.Println("Error disconnecting from MongoDB:", err)
 		return err
 	}
 
-	log.Println("MongoDB disconnected")
 	return nil
 }
 

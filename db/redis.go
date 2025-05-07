@@ -16,6 +16,6 @@ func SetupRedis() {
 	})
 
 	if err := Redis.Ping(context.Background()).Err(); err != nil {
-		log.Fatalf("Failed to connect to Redis: %v\n", err)
+		log.Fatalln("Failed to connect to Redis:", err)
 	}
 }
