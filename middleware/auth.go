@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"go-api-example/db"
-	"go-api-example/models"
+	"github.com/BurakYs/GoAPIExample/db"
+	"github.com/BurakYs/GoAPIExample/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"

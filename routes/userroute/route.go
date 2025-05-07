@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"go-api-example/config"
-	"go-api-example/db"
-	"go-api-example/middleware"
-	"go-api-example/models"
-	"go-api-example/utils"
+	"github.com/BurakYs/GoAPIExample/config"
+	"github.com/BurakYs/GoAPIExample/db"
+	"github.com/BurakYs/GoAPIExample/middleware"
+	"github.com/BurakYs/GoAPIExample/models"
+	"github.com/BurakYs/GoAPIExample/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
