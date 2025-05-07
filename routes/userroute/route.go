@@ -49,7 +49,7 @@ func RegisterRoutes(router *gin.Engine) {
 
 		skip := (int(page) - 1) * pageSize
 
-		cursor, err := db.GetCollection("users").Find(
+		cursor, err := db.Collections.Users.Find(
 			context.Background(),
 			bson.D{},
 			options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)),
@@ -87,7 +87,7 @@ func RegisterRoutes(router *gin.Engine) {
 		id := ctx.Param("id")
 
 		var result models.PublicUser
-		err := db.GetCollection("users").FindOne(context.Background(), bson.D{
+		err := db.Collections.Users.FindOne(context.Background(), bson.D{
 			{Key: "id", Value: id},
 		}).Decode(&result)
 
@@ -125,7 +125,7 @@ func RegisterRoutes(router *gin.Engine) {
 			return
 		}
 
-		_, err := db.GetCollection("users").InsertOne(context.Background(), bson.D{
+		_, err := db.Collections.Users.InsertOne(context.Background(), bson.D{
 			{Key: "id", Value: userID},
 			{Key: "username", Value: body.Username},
 			{Key: "email", Value: body.Email},
@@ -170,7 +170,7 @@ func RegisterRoutes(router *gin.Engine) {
 		body := ctx.MustGet("body").(models.LoginUserBody)
 
 		var result models.User
-		err := db.GetCollection("users").FindOne(context.Background(), bson.D{
+		err := db.Collections.Users.FindOne(context.Background(), bson.D{
 			{Key: "email", Value: body.Email},
 		}).Decode(&result)
 
@@ -232,7 +232,7 @@ func RegisterRoutes(router *gin.Engine) {
 	router.DELETE("/delete-account", middleware.AuthRequired(), func(ctx *gin.Context) {
 		userID, _ := ctx.Get("userId")
 
-		err := db.GetCollection("users").FindOneAndDelete(context.Background(), bson.D{
+		err := db.Collections.Users.FindOneAndDelete(context.Background(), bson.D{
 			{Key: "id", Value: userID},
 		}).Err()
 

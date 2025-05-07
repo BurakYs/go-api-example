@@ -13,16 +13,23 @@ import (
 )
 
 var Mongo *mongo.Client
+var Collections = struct {
+	Users *mongo.Collection
+}{
+	Users: nil,
+}
 
 func SetupMongo() {
 	client, err := mongo.Connect(options.Client().ApplyURI(config.AppConfig.MongoURI))
 	if err != nil {
-		log.Fatal("MongoDB connection error:", err)
+		log.Fatal("Failed to connect to MongoDB:", err)
 	}
 
 	Mongo = client
 
-	_, err = GetCollection("users").Indexes().CreateMany(context.Background(), []mongo.IndexModel{
+	Collections.Users = getCollection("users")
+
+	_, err = Collections.Users.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "email", Value: 1}},
 			Options: options.Index().SetUnique(true),
@@ -51,6 +58,6 @@ func DisconnectMongo() error {
 	return nil
 }
 
-func GetCollection(collectionName string) *mongo.Collection {
-	return Mongo.Database(config.AppConfig.MongoDBName).Collection(collectionName)
+func getCollection(name string) *mongo.Collection {
+	return Mongo.Database(config.AppConfig.MongoDBName).Collection(name)
 }
