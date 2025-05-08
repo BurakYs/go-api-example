@@ -1,7 +1,6 @@
 package userroute
 
 import (
-	"context"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -50,10 +49,11 @@ func RegisterRoutes(router *gin.Engine) {
 		skip := (int(page) - 1) * pageSize
 
 		cursor, err := db.Collections.Users.Find(
-			context.Background(),
-			bson.D{},
+			ctx,
+			bson.M{},
 			options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)),
 		)
+
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error fetching users",
@@ -65,7 +65,7 @@ func RegisterRoutes(router *gin.Engine) {
 
 		var results []models.PublicUser
 
-		for cursor.Next(context.Background()) {
+		for cursor.Next(ctx) {
 			var doc models.PublicUser
 
 			if err := cursor.Decode(&doc); err != nil {
@@ -87,8 +87,8 @@ func RegisterRoutes(router *gin.Engine) {
 		id := ctx.Param("id")
 
 		var result models.PublicUser
-		err := db.Collections.Users.FindOne(context.Background(), bson.D{
-			{Key: "id", Value: id},
+		err := db.Collections.Users.FindOne(ctx, bson.M{
+			"id": id,
 		}).Decode(&result)
 
 		if err != nil {
@@ -125,12 +125,12 @@ func RegisterRoutes(router *gin.Engine) {
 			return
 		}
 
-		_, err := db.Collections.Users.InsertOne(context.Background(), bson.D{
-			{Key: "id", Value: userID},
-			{Key: "username", Value: body.Username},
-			{Key: "email", Value: body.Email},
-			{Key: "password", Value: hashedPassword},
-			{Key: "createdAt", Value: createdAt},
+		_, err := db.Collections.Users.InsertOne(ctx, bson.M{
+			"id":        userID,
+			"username":  body.Username,
+			"email":     body.Email,
+			"password":  hashedPassword,
+			"createdAt": createdAt,
 		})
 
 		if err != nil {
@@ -170,8 +170,8 @@ func RegisterRoutes(router *gin.Engine) {
 		body := ctx.MustGet("body").(models.LoginUserBody)
 
 		var result models.User
-		err := db.Collections.Users.FindOne(context.Background(), bson.D{
-			{Key: "email", Value: body.Email},
+		err := db.Collections.Users.FindOne(ctx, bson.M{
+			"email": body.Email,
 		}).Decode(&result)
 
 		if err != nil {
@@ -232,8 +232,8 @@ func RegisterRoutes(router *gin.Engine) {
 	router.DELETE("/delete-account", middleware.AuthRequired(), func(ctx *gin.Context) {
 		userID, _ := ctx.Get("userId")
 
-		err := db.Collections.Users.FindOneAndDelete(context.Background(), bson.D{
-			{Key: "id", Value: userID},
+		err := db.Collections.Users.FindOneAndDelete(ctx, bson.M{
+			"id": userID,
 		}).Err()
 
 		if err != nil {
