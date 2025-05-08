@@ -5,6 +5,7 @@ import (
 
 	"github.com/BurakYs/GoAPIExample/config"
 	"github.com/BurakYs/GoAPIExample/db"
+	"github.com/BurakYs/GoAPIExample/middleware"
 	"github.com/BurakYs/GoAPIExample/models"
 	"github.com/BurakYs/GoAPIExample/routes/userroute"
 
@@ -25,7 +26,7 @@ func main() {
 
 	router := gin.Default()
 
-	router.Use(recovery())
+	router.Use(middleware.Recover())
 	userroute.RegisterRoutes(router)
 
 	router.NoRoute(func(ctx *gin.Context) {
@@ -35,18 +36,4 @@ func main() {
 	})
 
 	router.Run(":" + config.AppConfig.Port)
-}
-
-func recovery() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		defer func() {
-			if err := recover(); err != nil {
-				ctx.AbortWithStatusJSON(http.StatusInternalServerError, models.APIError{
-					Message: "Internal server error",
-				})
-			}
-		}()
-
-		ctx.Next()
-	}
 }
