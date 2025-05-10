@@ -109,10 +109,7 @@ func RegisterRoutes(router *gin.Engine) {
 	})
 
 	router.POST("/register", middleware.ValidateBody[models.RegisterUserBody](), func(ctx *gin.Context) {
-		body, ok := ctx.MustGet("body").(models.RegisterUserBody)
-		if !ok {
-			return
-		}
+		body := ctx.MustGet("body").(models.RegisterUserBody)
 
 		userID := uuid.NewString()
 		createdAt := time.Now().Format(time.RFC3339)
