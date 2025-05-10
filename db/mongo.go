@@ -31,11 +31,11 @@ func SetupMongo() {
 
 	_, err = Collections.Users.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "email", Value: 1}},
+			Keys:    bson.M{"email": 1},
 			Options: options.Index().SetUnique(true),
 		},
 		{
-			Keys:    bson.D{{Key: "username", Value: 1}},
+			Keys:    bson.M{"username": 1},
 			Options: options.Index().SetUnique(true),
 		},
 	})
