@@ -11,3 +11,6 @@ build:
 
 clean:
 	rm -f $(app_name)
+
+fmt:
+	go fmt ./...

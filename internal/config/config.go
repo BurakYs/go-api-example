@@ -22,7 +22,6 @@ func LoadEnv() {
 		log.Fatalln("Invalid .env file")
 	}
 
-
 	if err := env.Parse(&AppConfig); err != nil {
 		log.Fatalln("Failed to parse the .env file:", err)
 	}
