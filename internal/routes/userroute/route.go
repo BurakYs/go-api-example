@@ -153,7 +153,7 @@ func RegisterRoutes(router *gin.Engine) {
 			return
 		}
 
-		ctx.SetCookie("session_id", sessionID, 900, "/", config.AppConfig.Domain, true, true)
+		ctx.SetCookie("session_id", sessionID, 900, "/", config.App.Domain, true, true)
 
 		ctx.JSON(http.StatusCreated, gin.H{
 			"id":        userID,
@@ -202,7 +202,7 @@ func RegisterRoutes(router *gin.Engine) {
 			return
 		}
 
-		ctx.SetCookie("session_id", sessionID, 900, "/", config.AppConfig.Domain, true, true)
+		ctx.SetCookie("session_id", sessionID, 900, "/", config.App.Domain, true, true)
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"id":        result.ID,
@@ -222,7 +222,7 @@ func RegisterRoutes(router *gin.Engine) {
 			return
 		}
 
-		ctx.SetCookie("session_id", "", -1, "/", config.AppConfig.Domain, true, true)
+		ctx.SetCookie("session_id", "", -1, "/", config.App.Domain, true, true)
 		ctx.Status(http.StatusNoContent)
 	})
 

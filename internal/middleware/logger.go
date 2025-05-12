@@ -15,7 +15,7 @@ func Logger() gin.HandlerFunc {
 
 		ctx.Next()
 
-		if config.AppConfig.GinMode == gin.ReleaseMode && (clientIP == "127.0.0.1" || clientIP == "::1") {
+		if config.App.GinMode == gin.ReleaseMode && (clientIP == "127.0.0.1" || clientIP == "::1") {
 			return
 		}
 

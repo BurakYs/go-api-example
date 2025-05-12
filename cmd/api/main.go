@@ -22,7 +22,7 @@ func main() {
 		db.DisconnectMongo()
 	}()
 
-	gin.SetMode(config.AppConfig.GinMode)
+	gin.SetMode(config.App.GinMode)
 
 	router := gin.New()
 
@@ -35,5 +35,5 @@ func main() {
 		})
 	})
 
-	router.Run(":" + config.AppConfig.Port)
+	router.Run(":" + config.App.Port)
 }

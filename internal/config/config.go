@@ -15,14 +15,14 @@ type Config struct {
 	MongoURI    string `env:"MONGODB_URI,required"`
 }
 
-var AppConfig Config
+var App Config
 
 func LoadEnv() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalln("Invalid .env file")
 	}
 
-	if err := env.Parse(&AppConfig); err != nil {
+	if err := env.Parse(&App); err != nil {
 		log.Fatalln("Failed to parse the .env file:", err)
 	}
 }

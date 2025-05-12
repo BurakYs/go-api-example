@@ -20,7 +20,7 @@ var Collections = struct {
 }
 
 func SetupMongo() {
-	client, err := mongo.Connect(options.Client().ApplyURI(config.AppConfig.MongoURI))
+	client, err := mongo.Connect(options.Client().ApplyURI(config.App.MongoURI))
 	if err != nil {
 		log.Fatalln("Failed to connect to MongoDB:", err)
 	}
@@ -58,5 +58,5 @@ func DisconnectMongo() error {
 }
 
 func getCollection(name string) *mongo.Collection {
-	return Mongo.Database(config.AppConfig.MongoDBName).Collection(name)
+	return Mongo.Database(config.App.MongoDBName).Collection(name)
 }
