@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/BurakYs/GoAPIExample/models"
+	"github.com/BurakYs/GoAPIExample/internal/models"
 	"github.com/gin-gonic/gin"
 )
 

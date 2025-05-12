@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/BurakYs/GoAPIExample/config"
-	"github.com/BurakYs/GoAPIExample/db"
-	"github.com/BurakYs/GoAPIExample/middleware"
-	"github.com/BurakYs/GoAPIExample/models"
-	"github.com/BurakYs/GoAPIExample/utils"
+	"github.com/BurakYs/GoAPIExample/internal/config"
+	"github.com/BurakYs/GoAPIExample/internal/db"
+	"github.com/BurakYs/GoAPIExample/internal/middleware"
+	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/GoAPIExample/internal/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

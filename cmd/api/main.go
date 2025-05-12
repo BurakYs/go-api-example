@@ -3,11 +3,11 @@ package main
 import (
 	"net/http"
 
-	"github.com/BurakYs/GoAPIExample/config"
-	"github.com/BurakYs/GoAPIExample/db"
-	"github.com/BurakYs/GoAPIExample/middleware"
-	"github.com/BurakYs/GoAPIExample/models"
-	"github.com/BurakYs/GoAPIExample/routes/userroute"
+	"github.com/BurakYs/GoAPIExample/internal/config"
+	"github.com/BurakYs/GoAPIExample/internal/db"
+	"github.com/BurakYs/GoAPIExample/internal/middleware"
+	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/GoAPIExample/internal/routes/userroute"
 
 	"github.com/gin-gonic/gin"
 )

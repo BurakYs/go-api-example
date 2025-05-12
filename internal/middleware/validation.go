@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/BurakYs/GoAPIExample/models"
+	"github.com/BurakYs/GoAPIExample/internal/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"

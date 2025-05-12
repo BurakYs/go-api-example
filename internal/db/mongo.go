@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/BurakYs/GoAPIExample/config"
+	"github.com/BurakYs/GoAPIExample/internal/config"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"

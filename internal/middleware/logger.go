@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/BurakYs/GoAPIExample/config"
+	"github.com/BurakYs/GoAPIExample/internal/config"
 	"github.com/gin-gonic/gin"
 )
 
