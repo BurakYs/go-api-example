@@ -24,9 +24,9 @@ func main() {
 
 	gin.SetMode(config.AppConfig.GinMode)
 
-	router := gin.Default()
+	router := gin.New()
 
-	router.Use(middleware.Recover())
+	router.Use(middleware.Logger(), middleware.Recovery())
 	userroute.RegisterRoutes(router)
 
 	router.NoRoute(func(ctx *gin.Context) {
