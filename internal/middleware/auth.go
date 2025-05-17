@@ -12,10 +12,10 @@ import (
 )
 
 func AuthRequired() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		sessionID, err := ctx.Cookie("session_id")
+	return func(c *gin.Context) {
+		sessionID, err := c.Cookie("session_id")
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.APIError{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, models.APIError{
 				Message: "Unauthorized",
 			})
 			return
@@ -23,20 +23,20 @@ func AuthRequired() gin.HandlerFunc {
 
 		userID, err := db.Redis.Get(context.Background(), "session:"+sessionID).Result()
 		if err == redis.Nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, models.APIError{
+			c.AbortWithStatusJSON(http.StatusUnauthorized, models.APIError{
 				Message: "Unauthorized",
 			})
 			return
 		}
 
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, models.APIError{
+			c.AbortWithStatusJSON(http.StatusInternalServerError, models.APIError{
 				Message: "Internal Server Error",
 			})
 			return
 		}
 
-		ctx.Set("userId", userID)
-		ctx.Next()
+		c.Set("userId", userID)
+		c.Next()
 	}
 }

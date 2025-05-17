@@ -8,15 +8,15 @@ import (
 )
 
 func Recovery() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
+	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				ctx.AbortWithStatusJSON(http.StatusInternalServerError, models.APIError{
+				c.AbortWithStatusJSON(http.StatusInternalServerError, models.APIError{
 					Message: "Internal server error",
 				})
 			}
 		}()
 
-		ctx.Next()
+		c.Next()
 	}
 }

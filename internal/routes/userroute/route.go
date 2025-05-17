@@ -21,11 +21,11 @@ import (
 )
 
 func RegisterRoutes(router *gin.Engine) {
-	router.GET("/health-check", func(ctx *gin.Context) {
+	router.GET("/health-check", func(c *gin.Context) {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 
-		ctx.JSON(200, gin.H{
+		c.JSON(200, gin.H{
 			"Alloc":      utils.BytesToMB(int(m.Alloc)),
 			"TotalAlloc": utils.BytesToMB(int(m.TotalAlloc)),
 			"Sys":        utils.BytesToMB(int(m.Sys)),
@@ -33,14 +33,14 @@ func RegisterRoutes(router *gin.Engine) {
 		})
 	})
 
-	router.GET("/users", func(ctx *gin.Context) {
+	router.GET("/users", func(c *gin.Context) {
 		const pageSize = 10
 
-		pageStr := ctx.DefaultQuery("page", "1")
+		pageStr := c.DefaultQuery("page", "1")
 		page, err := strconv.Atoi(pageStr)
 
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, models.APIError{
+			c.JSON(http.StatusBadRequest, models.APIError{
 				Message: "Invalid page number",
 			})
 			return
@@ -49,23 +49,23 @@ func RegisterRoutes(router *gin.Engine) {
 		skip := (int(page) - 1) * pageSize
 
 		cursor, err := db.Collections.Users.Find(
-			ctx,
+			c,
 			bson.M{},
 			options.Find().SetSkip(int64(skip)).SetLimit(int64(pageSize)),
 		)
 
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error fetching users",
 			})
 			return
 		}
 
-		defer cursor.Close(ctx)
+		defer cursor.Close(c)
 
 		var results []models.PublicUser
 
-		for cursor.Next(ctx) {
+		for cursor.Next(c) {
 			var doc models.PublicUser
 
 			if err := cursor.Decode(&doc); err != nil {
@@ -76,53 +76,53 @@ func RegisterRoutes(router *gin.Engine) {
 		}
 
 		if len(results) == 0 {
-			ctx.JSON(http.StatusOK, []models.PublicUser{})
+			c.JSON(http.StatusOK, []models.PublicUser{})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, results)
+		c.JSON(http.StatusOK, results)
 	})
 
-	router.GET("/users/:id", func(ctx *gin.Context) {
-		id := ctx.Param("id")
+	router.GET("/users/:id", func(c *gin.Context) {
+		id := c.Param("id")
 
 		var result models.PublicUser
-		err := db.Collections.Users.FindOne(ctx, bson.M{
+		err := db.Collections.Users.FindOne(c, bson.M{
 			"id": id,
 		}).Decode(&result)
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				ctx.JSON(http.StatusNotFound, models.APIError{
+				c.JSON(http.StatusNotFound, models.APIError{
 					Message: "User not found",
 				})
 				return
 			}
 
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error fetching user",
 			})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, result)
 	})
 
-	router.POST("/register", middleware.ValidateBody[models.RegisterUserBody](), func(ctx *gin.Context) {
-		body := ctx.MustGet("body").(models.RegisterUserBody)
+	router.POST("/register", middleware.ValidateBody[models.RegisterUserBody](), func(c *gin.Context) {
+		body := c.MustGet("body").(models.RegisterUserBody)
 
 		userID := uuid.NewString()
 		createdAt := time.Now().Format(time.RFC3339)
 
 		hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 		if hashErr != nil {
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Internal Server Error",
 			})
 			return
 		}
 
-		_, err := db.Collections.Users.InsertOne(ctx, bson.M{
+		_, err := db.Collections.Users.InsertOne(c, bson.M{
 			"id":        userID,
 			"username":  body.Username,
 			"email":     body.Email,
@@ -132,13 +132,13 @@ func RegisterRoutes(router *gin.Engine) {
 
 		if err != nil {
 			if mongo.IsDuplicateKeyError(err) {
-				ctx.JSON(http.StatusConflict, models.APIError{
+				c.JSON(http.StatusConflict, models.APIError{
 					Message: "A user with the same username or e-mail already exists",
 				})
 				return
 			}
 
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error creating user",
 			})
 			return
@@ -146,16 +146,16 @@ func RegisterRoutes(router *gin.Engine) {
 
 		sessionID := uuid.NewString()
 
-		if err := db.Redis.Set(ctx, "session:"+sessionID, userID, 15*time.Minute).Err(); err != nil {
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+		if err := db.Redis.Set(c, "session:"+sessionID, userID, 15*time.Minute).Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Could not create session",
 			})
 			return
 		}
 
-		ctx.SetCookie("session_id", sessionID, 900, "/", config.App.Domain, true, true)
+		c.SetCookie("session_id", sessionID, 900, "/", config.App.Domain, true, true)
 
-		ctx.JSON(http.StatusCreated, gin.H{
+		c.JSON(http.StatusCreated, gin.H{
 			"id":        userID,
 			"username":  body.Username,
 			"email":     body.Email,
@@ -163,23 +163,23 @@ func RegisterRoutes(router *gin.Engine) {
 		})
 	})
 
-	router.POST("/login", middleware.ValidateBody[models.LoginUserBody](), func(ctx *gin.Context) {
-		body := ctx.MustGet("body").(models.LoginUserBody)
+	router.POST("/login", middleware.ValidateBody[models.LoginUserBody](), func(c *gin.Context) {
+		body := c.MustGet("body").(models.LoginUserBody)
 
 		var result models.User
-		err := db.Collections.Users.FindOne(ctx, bson.M{
+		err := db.Collections.Users.FindOne(c, bson.M{
 			"email": body.Email,
 		}).Decode(&result)
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				ctx.JSON(http.StatusNotFound, models.APIError{
+				c.JSON(http.StatusNotFound, models.APIError{
 					Message: "User not found",
 				})
 				return
 			}
 
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error fetching user",
 			})
 			return
@@ -187,7 +187,7 @@ func RegisterRoutes(router *gin.Engine) {
 
 		compareErr := bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(body.Password))
 		if compareErr != nil {
-			ctx.JSON(http.StatusForbidden, models.APIError{
+			c.JSON(http.StatusForbidden, models.APIError{
 				Message: "Invalid e-mail or password",
 			})
 			return
@@ -195,16 +195,16 @@ func RegisterRoutes(router *gin.Engine) {
 
 		sessionID := uuid.NewString()
 
-		if err := db.Redis.Set(ctx, "session:"+sessionID, result.ID, 15*time.Minute).Err(); err != nil {
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+		if err := db.Redis.Set(c, "session:"+sessionID, result.ID, 15*time.Minute).Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Could not create session",
 			})
 			return
 		}
 
-		ctx.SetCookie("session_id", sessionID, 900, "/", config.App.Domain, true, true)
+		c.SetCookie("session_id", sessionID, 900, "/", config.App.Domain, true, true)
 
-		ctx.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"id":        result.ID,
 			"username":  result.Username,
 			"email":     result.Email,
@@ -212,42 +212,42 @@ func RegisterRoutes(router *gin.Engine) {
 		})
 	})
 
-	router.POST("/logout", middleware.AuthRequired(), func(ctx *gin.Context) {
-		sessionID, _ := ctx.Cookie("session_id")
+	router.POST("/logout", middleware.AuthRequired(), func(c *gin.Context) {
+		sessionID, _ := c.Cookie("session_id")
 
-		if err := db.Redis.Del(ctx, "session:"+sessionID).Err(); err != nil {
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+		if err := db.Redis.Del(c, "session:"+sessionID).Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error deleting session",
 			})
 			return
 		}
 
-		ctx.SetCookie("session_id", "", -1, "/", config.App.Domain, true, true)
-		ctx.Status(http.StatusNoContent)
+		c.SetCookie("session_id", "", -1, "/", config.App.Domain, true, true)
+		c.Status(http.StatusNoContent)
 	})
 
-	router.DELETE("/delete-account", middleware.AuthRequired(), func(ctx *gin.Context) {
-		userID, _ := ctx.Get("userId")
+	router.DELETE("/delete-account", middleware.AuthRequired(), func(c *gin.Context) {
+		userID, _ := c.Get("userId")
 
-		err := db.Collections.Users.FindOneAndDelete(ctx, bson.M{
+		err := db.Collections.Users.FindOneAndDelete(c, bson.M{
 			"id": userID,
 		}).Err()
 
 		if err != nil {
 			if err == mongo.ErrNoDocuments {
-				ctx.JSON(http.StatusNotFound, models.APIError{
+				c.JSON(http.StatusNotFound, models.APIError{
 					Message: "User not found",
 				})
 				return
 			}
 
-			ctx.JSON(http.StatusInternalServerError, models.APIError{
+			c.JSON(http.StatusInternalServerError, models.APIError{
 				Message: "Error deleting user",
 			})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, models.APIError{
+		c.JSON(http.StatusOK, models.APIError{
 			Message: "User deleted successfully",
 		})
 	})

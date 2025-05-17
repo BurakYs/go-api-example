@@ -29,8 +29,8 @@ func main() {
 	router.Use(middleware.Logger(), middleware.Recovery())
 	userroute.RegisterRoutes(router)
 
-	router.NoRoute(func(ctx *gin.Context) {
-		ctx.JSON(http.StatusNotFound, models.APIError{
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, models.APIError{
 			Message: "Page not found",
 		})
 	})

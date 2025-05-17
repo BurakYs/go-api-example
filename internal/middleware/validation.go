@@ -29,21 +29,21 @@ type normalizable interface {
 }
 
 func validate[T any](kind string) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
+	return func(c *gin.Context) {
 		var data T
 		var err error
 
 		switch kind {
 		case "body":
-			err = ctx.ShouldBindJSON(&data)
+			err = c.ShouldBindJSON(&data)
 		case "query":
-			err = ctx.ShouldBindQuery(&data)
+			err = c.ShouldBindQuery(&data)
 		case "params":
-			err = ctx.ShouldBindUri(&data)
+			err = c.ShouldBindUri(&data)
 		}
 
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, data))
+			c.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, data))
 			return
 		}
 
@@ -51,8 +51,8 @@ func validate[T any](kind string) gin.HandlerFunc {
 			normalizable.Normalize()
 		}
 
-		ctx.Set(kind, data)
-		ctx.Next()
+		c.Set(kind, data)
+		c.Next()
 	}
 }
 
