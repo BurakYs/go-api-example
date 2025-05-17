@@ -1,33 +1,18 @@
 package middleware
 
 import (
-	"log"
-	"time"
-
 	"github.com/BurakYs/GoAPIExample/internal/config"
 	"github.com/gin-gonic/gin"
 )
 
 func Logger() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		clientIP := ctx.ClientIP()
-		start := time.Now()
+	return gin.LoggerWithConfig(gin.LoggerConfig{
+		Skip: func(c *gin.Context) bool {
+			ip := c.ClientIP()
 
-		ctx.Next()
-
-		if config.App.GinMode == gin.ReleaseMode && (clientIP == "127.0.0.1" || clientIP == "::1") {
-			return
-		}
-
-		latency := time.Since(start)
-		status := ctx.Writer.Status()
-
-		log.Printf("[GIN] | %3d | %13v | %15s | %-7s | %#v\n",
-			status,
-			latency,
-			clientIP,
-			ctx.Request.Method,
-			ctx.Request.URL.Path,
-		)
-	}
+			isRelease := config.App.GinMode == gin.ReleaseMode
+			isLocal := ip == "127.0.0.1" || ip == "::1"
+			return isRelease && isLocal
+		},
+	})
 }
