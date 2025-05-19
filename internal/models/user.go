@@ -16,6 +16,14 @@ type PublicUser struct {
 	CreatedAt string `json:"createdAt"`
 }
 
+type GetAllUsersQuery struct {
+	Page int `query:"page,default:1" validate:"min=1"`
+}
+
+type GetUserByIDParams struct {
+	ID string `uri:"id" validate:"required,uuid"`
+}
+
 type RegisterUserBody struct {
 	Username string `json:"username" binding:"required" validate:"min=3,max=20"`
 	Email    string `json:"email" binding:"required" validate:"email"`

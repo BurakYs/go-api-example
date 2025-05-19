@@ -4,15 +4,13 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"net/http"
 	"reflect"
 	"strings"
 
-	"github.com/BurakYs/GoAPIExample/internal/models"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v3"
+
+	"github.com/BurakYs/GoAPIExample/internal/models"
 )
 
 type BindingLocation string
@@ -25,23 +23,23 @@ const (
 	BindingLocationMultipartForm BindingLocation = "multipartForm"
 )
 
-func ValidateBody[T any]() gin.HandlerFunc {
+func ValidateBody[T any]() fiber.Handler {
 	return validate[T](BindingLocationBody)
 }
 
-func ValidateQuery[T any]() gin.HandlerFunc {
+func ValidateQuery[T any]() fiber.Handler {
 	return validate[T](BindingLocationQuery)
 }
 
-func ValidateParams[T any]() gin.HandlerFunc {
+func ValidateParams[T any]() fiber.Handler {
 	return validate[T](BindingLocationParams)
 }
 
-func ValidateForm[T any]() gin.HandlerFunc {
+func ValidateForm[T any]() fiber.Handler {
 	return validate[T](BindingLocationForm)
 }
 
-func ValidateMultipartForm[T any]() gin.HandlerFunc {
+func ValidateMultipartForm[T any]() fiber.Handler {
 	return validate[T](BindingLocationMultipartForm)
 }
 
@@ -51,40 +49,36 @@ type transformable interface {
 
 var vld = validator.New()
 
-func validate[T any](location BindingLocation) gin.HandlerFunc {
-	return func(c *gin.Context) {
+func validate[T any](location BindingLocation) fiber.Handler {
+	return func(c fiber.Ctx) error {
 		var data T
 		var err error
 
 		switch location {
 		case BindingLocationBody:
-			err = c.ShouldBindJSON(&data)
+			err = c.Bind().Body(&data)
 		case BindingLocationQuery:
-			err = c.ShouldBindQuery(&data)
+			err = c.Bind().Query(&data)
 		case BindingLocationParams:
-			err = c.ShouldBindUri(&data)
-		case BindingLocationForm:
-			err = c.ShouldBindWith(&data, binding.Form)
-		case BindingLocationMultipartForm:
-			err = c.ShouldBindWith(&data, binding.FormMultipart)
+			err = c.Bind().URI(&data)
+		case BindingLocationForm, BindingLocationMultipartForm:
+			err = c.Bind().Form(&data)
 		}
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, string(location), data))
-			return
+			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, string(location), data))
 		}
 
 		if err := vld.Struct(data); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, string(location), data))
-			return
+			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, string(location), data))
 		}
 
 		if t, ok := any(&data).(transformable); ok {
 			t.Transform()
 		}
 
-		c.Set(string(location), data)
-		c.Next()
+		c.Locals(location, data)
+		return c.Next()
 	}
 }
 
@@ -94,10 +88,6 @@ func formatValidationError(err error, location string, data any) any {
 	switch {
 	case errors.As(err, &ve):
 		return formatValidatorErrors(&ve, location, data)
-	case err.Error() == "EOF":
-		return models.APIError{
-			Message: "Empty request body",
-		}
 	default:
 		return models.APIError{
 			Message: "Invalid parameters provided",
@@ -120,19 +110,33 @@ func formatValidatorErrors(ve *validator.ValidationErrors, location string, data
 }
 
 func formatFieldError(fe validator.FieldError, location string, field string) models.ValidationFailure {
-	msg := "This field is invalid"
+	msg := fmt.Sprintf("This field is invalid for tag: %s", fe.Tag())
 
 	switch fe.Tag() {
 	case "required":
 		msg = "This field is required"
 	case "email":
 		msg = "This field must be a valid email address"
+	case "uuid":
+		msg = "This field must be a valid UUID"
 	case "min":
-		msg = fmt.Sprintf("This field must be at least %s characters", fe.Param())
+		switch fe.Kind() {
+		case reflect.String:
+			msg = fmt.Sprintf("This field must be at least %s characters long", fe.Param())
+		case reflect.Slice, reflect.Array:
+			msg = fmt.Sprintf("This field must contain at least %s items", fe.Param())
+		default:
+			msg = fmt.Sprintf("The value must be at least %s", fe.Param())
+		}
 	case "max":
-		msg = fmt.Sprintf("This field must be at most %s characters", fe.Param())
-	default:
-		msg = fmt.Sprintf("This field is invalid: %s", fe.Tag())
+		switch fe.Kind() {
+		case reflect.String:
+			msg = fmt.Sprintf("This field must be at most %s characters long", fe.Param())
+		case reflect.Slice, reflect.Array:
+			msg = fmt.Sprintf("This field must contain at most %s items", fe.Param())
+		default:
+			msg = fmt.Sprintf("The value must be at most %s", fe.Param())
+		}
 	}
 
 	return models.ValidationFailure{
@@ -150,7 +154,7 @@ func getFieldName(structField string, obj any) string {
 	}
 
 	if f, ok := t.FieldByName(structField); ok {
-		tag := cmp.Or(f.Tag.Get("json"), f.Tag.Get("uri"), f.Tag.Get("form"))
+		tag := cmp.Or(f.Tag.Get("json"), f.Tag.Get("query"), f.Tag.Get("uri"), f.Tag.Get("form"), f.Tag.Get("header"), f.Tag.Get("cookie"), f.Tag.Get("cbor"), f.Tag.Get("respHeader"), f.Tag.Get("xml"))
 
 		if tag == "-" {
 			return ""

@@ -2,41 +2,35 @@ package middleware
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/BurakYs/GoAPIExample/internal/db"
 	"github.com/BurakYs/GoAPIExample/internal/models"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
 )
 
-func AuthRequired() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		sessionID, err := c.Cookie("session_id")
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, models.APIError{
+func AuthRequired() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		sessionID := c.Cookies("session_id")
+		if sessionID == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(models.APIError{
 				Message: "Unauthorized",
 			})
-			return
 		}
 
 		userID, err := db.Redis.Get(context.Background(), "session:"+sessionID).Result()
 		if err == redis.Nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, models.APIError{
+			return c.Status(fiber.StatusUnauthorized).JSON(models.APIError{
 				Message: "Unauthorized",
 			})
-			return
 		}
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, models.APIError{
-				Message: "Internal Server Error",
-			})
-			return
+			panic(err)
 		}
 
-		c.Set("userId", userID)
-		c.Next()
+		c.Locals("userID", userID)
+		return c.Next()
 	}
 }

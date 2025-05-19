@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	GinMode     string `env:"GIN_MODE" envDefault:"debug"`
+	Mode        string `env:"MODE" envDefault:"debug"` // debug or release
 	Port        string `env:"PORT,required"`
 	Domain      string `env:"DOMAIN,required"`
 	MongoDBName string `env:"MONGODB_DBNAME,required"`
@@ -16,6 +16,11 @@ type Config struct {
 }
 
 var App Config
+
+const (
+	ModeDebug   = "debug"
+	ModeRelease = "release"
+)
 
 func LoadEnv() {
 	if err := godotenv.Load(); err != nil {

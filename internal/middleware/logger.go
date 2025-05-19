@@ -1,18 +1,42 @@
 package middleware
 
 import (
+	"log"
+	"time"
+
 	"github.com/BurakYs/GoAPIExample/internal/config"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
 )
 
-func Logger() gin.HandlerFunc {
-	return gin.LoggerWithConfig(gin.LoggerConfig{
-		Skip: func(c *gin.Context) bool {
-			ip := c.ClientIP()
+func Logger() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		start := time.Now()
+		ip := c.IP()
 
-			isRelease := config.App.GinMode == gin.ReleaseMode
-			isLocal := ip == "127.0.0.1" || ip == "::1"
-			return isRelease && isLocal
-		},
-	})
+		isRelease := config.App.Mode == config.ModeRelease
+		isLocal := ip == "127.0.0.1" || ip == "::1"
+		skip := isRelease && isLocal
+		if skip {
+			return c.Next()
+		}
+
+		c.Next()
+
+		latency := time.Since(start)
+		status := c.Response().StatusCode()
+		method := c.Method()
+		path := c.Path()
+
+		log.Printf(
+			"%3d | %13v | %15s | %-7s | %#v\n",
+			status,
+			latency,
+			ip,
+			method,
+			path,
+		)
+
+		return nil
+	}
+
 }

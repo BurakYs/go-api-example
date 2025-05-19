@@ -1,15 +1,17 @@
 package main
 
 import (
-	"net/http"
+	"log"
 
 	"github.com/BurakYs/GoAPIExample/internal/config"
 	"github.com/BurakYs/GoAPIExample/internal/db"
 	"github.com/BurakYs/GoAPIExample/internal/middleware"
 	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/GoAPIExample/internal/routes"
 	"github.com/BurakYs/GoAPIExample/internal/routes/userroute"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 )
 
 func main() {
@@ -22,18 +24,27 @@ func main() {
 		db.DisconnectMongo()
 	}()
 
-	gin.SetMode(config.App.GinMode)
+	app := fiber.New(fiber.Config{
+		ErrorHandler: middleware.ErrorHandler(),
+	})
 
-	router := gin.New()
+	app.Use(recover.New(), middleware.Logger())
 
-	router.Use(middleware.Logger(), middleware.Recovery())
-	userroute.RegisterRoutes(router)
+	router := app.Group("")
+	routes.Register(&router)
+	userroute.Register(&router)
 
-	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, models.APIError{
-			Message: "Page not found",
+	app.Use(func(c fiber.Ctx) error {
+		return c.Status(fiber.StatusNotFound).JSON(models.APIError{
+			Message: "Not Found",
 		})
 	})
 
-	router.Run(":" + config.App.Port)
+	err := app.Listen(":"+config.App.Port, fiber.ListenConfig{
+		DisableStartupMessage: config.App.Mode == config.ModeRelease,
+	})
+
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
