@@ -5,9 +5,9 @@ type APIError struct {
 }
 
 type ValidationFailure struct {
-	Type    string `json:"type"`
-	Field   string `json:"field"`
-	Message string `json:"error"`
+	Location string `json:"location"`
+	Field    string `json:"field"`
+	Message  string `json:"error"`
 }
 
 type ValidationError struct {

@@ -17,21 +17,21 @@ type PublicUser struct {
 }
 
 type RegisterUserBody struct {
-	Username string `json:"username" binding:"required,min=3,max=20"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8,max=32"`
+	Username string `json:"username" binding:"required" validate:"min=3,max=20"`
+	Email    string `json:"email" binding:"required" validate:"email"`
+	Password string `json:"password" binding:"required" validate:"min=8,max=20"`
 }
 
-func (b *RegisterUserBody) Normalize() {
+func (b *RegisterUserBody) Transform() {
 	b.Email = strings.ToLower(b.Email)
 	b.Username = strings.ToLower(b.Username)
 }
 
 type LoginUserBody struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8,max=32"`
+	Email    string `json:"email" binding:"required" validate:"email"`
+	Password string `json:"password" binding:"required" validate:"min=8,max=20"`
 }
 
-func (b *LoginUserBody) Normalize() {
+func (b *LoginUserBody) Transform() {
 	b.Email = strings.ToLower(b.Email)
 }

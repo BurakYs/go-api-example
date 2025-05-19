@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"cmp"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -9,78 +11,106 @@ import (
 	"github.com/BurakYs/GoAPIExample/internal/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
+type BindingLocation string
+
+const (
+	BindingLocationBody          BindingLocation = "body"
+	BindingLocationQuery         BindingLocation = "query"
+	BindingLocationParams        BindingLocation = "params"
+	BindingLocationForm          BindingLocation = "form"
+	BindingLocationMultipartForm BindingLocation = "multipartForm"
+)
+
 func ValidateBody[T any]() gin.HandlerFunc {
-	return validate[T]("body")
+	return validate[T](BindingLocationBody)
 }
 
 func ValidateQuery[T any]() gin.HandlerFunc {
-	return validate[T]("query")
+	return validate[T](BindingLocationQuery)
 }
 
 func ValidateParams[T any]() gin.HandlerFunc {
-	return validate[T]("params")
+	return validate[T](BindingLocationParams)
 }
 
-type normalizable interface {
-	Normalize()
+func ValidateForm[T any]() gin.HandlerFunc {
+	return validate[T](BindingLocationForm)
 }
 
-func validate[T any](kind string) gin.HandlerFunc {
+func ValidateMultipartForm[T any]() gin.HandlerFunc {
+	return validate[T](BindingLocationMultipartForm)
+}
+
+type transformable interface {
+	Transform()
+}
+
+var vld = validator.New()
+
+func validate[T any](location BindingLocation) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var data T
 		var err error
 
-		switch kind {
-		case "body":
+		switch location {
+		case BindingLocationBody:
 			err = c.ShouldBindJSON(&data)
-		case "query":
+		case BindingLocationQuery:
 			err = c.ShouldBindQuery(&data)
-		case "params":
+		case BindingLocationParams:
 			err = c.ShouldBindUri(&data)
+		case BindingLocationForm:
+			err = c.ShouldBindWith(&data, binding.Form)
+		case BindingLocationMultipartForm:
+			err = c.ShouldBindWith(&data, binding.FormMultipart)
 		}
 
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, data))
+			c.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, string(location), data))
 			return
 		}
 
-		if normalizable, ok := any(&data).(normalizable); ok {
-			normalizable.Normalize()
+		if err := vld.Struct(data); err != nil {
+			c.AbortWithStatusJSON(http.StatusBadRequest, formatValidationError(err, string(location), data))
+			return
 		}
 
-		c.Set(kind, data)
+		if t, ok := any(&data).(transformable); ok {
+			t.Transform()
+		}
+
+		c.Set(string(location), data)
 		c.Next()
 	}
 }
 
-func formatValidationError(err error, data any) models.ValidationError {
+func formatValidationError(err error, location string, data any) any {
 	var ve validator.ValidationErrors
 
 	switch {
 	case errors.As(err, &ve):
-		return formatValidatorErrors(&ve, data)
+		return formatValidatorErrors(&ve, location, data)
 	case err.Error() == "EOF":
-		return models.ValidationError{
-			Message:            "Invalid JSON body",
-			ValidationFailures: []models.ValidationFailure{},
+		return models.APIError{
+			Message: "Empty request body",
 		}
 	default:
-		return models.ValidationError{
-			Message:            "Invalid parameters provided",
-			ValidationFailures: []models.ValidationFailure{},
+		return models.APIError{
+			Message: "Invalid parameters provided",
 		}
 	}
 }
 
-func formatValidatorErrors(ve *validator.ValidationErrors, data any) models.ValidationError {
+func formatValidatorErrors(ve *validator.ValidationErrors, location string, data any) models.ValidationError {
 	failures := make([]models.ValidationFailure, 0, len(*ve))
 
 	for _, fe := range *ve {
-		field := getJSONFieldName(fe.StructField(), data)
-		failures = append(failures, formatFieldError(fe, field))
+		field := getFieldName(fe.StructField(), data)
+		failures = append(failures, formatFieldError(fe, location, field))
 	}
 
 	return models.ValidationError{
@@ -89,36 +119,30 @@ func formatValidatorErrors(ve *validator.ValidationErrors, data any) models.Vali
 	}
 }
 
-func formatFieldError(fe validator.FieldError, field string) models.ValidationFailure {
+func formatFieldError(fe validator.FieldError, location string, field string) models.ValidationFailure {
+	msg := "This field is invalid"
+
 	switch fe.Tag() {
 	case "required":
-		return models.ValidationFailure{
-			Type:    "required",
-			Field:   field,
-			Message: "This field is required",
-		}
+		msg = "This field is required"
+	case "email":
+		msg = "This field must be a valid email address"
 	case "min":
-		return models.ValidationFailure{
-			Type:    "min",
-			Field:   field,
-			Message: "This field must be at least " + fe.Param() + " characters",
-		}
+		msg = fmt.Sprintf("This field must be at least %s characters", fe.Param())
 	case "max":
-		return models.ValidationFailure{
-			Type:    "max",
-			Field:   field,
-			Message: "This field must be at most " + fe.Param() + " characters",
-		}
+		msg = fmt.Sprintf("This field must be at most %s characters", fe.Param())
 	default:
-		return models.ValidationFailure{
-			Type:    "invalid",
-			Field:   field,
-			Message: "This field is invalid",
-		}
+		msg = fmt.Sprintf("This field is invalid: %s", fe.Tag())
+	}
+
+	return models.ValidationFailure{
+		Location: location,
+		Field:    field,
+		Message:  msg,
 	}
 }
 
-func getJSONFieldName(structField string, obj any) string {
+func getFieldName(structField string, obj any) string {
 	t := reflect.TypeOf(obj)
 
 	if t.Kind() == reflect.Pointer {
@@ -126,7 +150,7 @@ func getJSONFieldName(structField string, obj any) string {
 	}
 
 	if f, ok := t.FieldByName(structField); ok {
-		tag := f.Tag.Get("json")
+		tag := cmp.Or(f.Tag.Get("json"), f.Tag.Get("uri"), f.Tag.Get("form"))
 
 		if tag == "-" {
 			return ""
