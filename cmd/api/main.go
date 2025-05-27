@@ -9,10 +9,19 @@ import (
 	"github.com/BurakYs/GoAPIExample/internal/models"
 	"github.com/BurakYs/GoAPIExample/internal/routes"
 	"github.com/BurakYs/GoAPIExample/internal/routes/userroute"
+	"github.com/go-playground/validator/v10"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 )
+
+type structValidator struct {
+	validator *validator.Validate
+}
+
+func (v *structValidator) Validate(i any) error {
+	return v.validator.Struct(i)
+}
 
 func main() {
 	config.LoadEnv()
@@ -25,7 +34,11 @@ func main() {
 	}()
 
 	app := fiber.New(fiber.Config{
-		ErrorHandler: middleware.ErrorHandler(),
+		ErrorHandler:  middleware.ErrorHandler(),
+		CaseSensitive: true,
+		StructValidator: &structValidator{
+			validator: validator.New(),
+		},
 	})
 
 	app.Use(recover.New(), middleware.Logger())

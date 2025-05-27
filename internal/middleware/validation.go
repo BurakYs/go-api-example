@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"reflect"
 	"strings"
 
@@ -47,8 +48,6 @@ type transformable interface {
 	Transform()
 }
 
-var vld = validator.New()
-
 func validate[T any](location BindingLocation) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		var data T
@@ -62,14 +61,16 @@ func validate[T any](location BindingLocation) fiber.Handler {
 		case BindingLocationParams:
 			err = c.Bind().URI(&data)
 		case BindingLocationForm, BindingLocationMultipartForm:
-			err = c.Bind().Form(&data)
+			if location == BindingLocationMultipartForm {
+				err = bindFileFields(c, &data)
+			}
+
+			if err == nil {
+				err = c.Bind().Form(&data)
+			}
 		}
 
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, string(location), data))
-		}
-
-		if err := vld.Struct(data); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, string(location), data))
 		}
 
@@ -166,4 +167,40 @@ func getFieldName(structField string, obj any) string {
 	}
 
 	return ""
+}
+
+func bindFileFields(c fiber.Ctx, data any) error {
+	val := reflect.ValueOf(data)
+	if val.Kind() != reflect.Pointer || val.IsNil() {
+		return errors.New("data must be a non-nil pointer")
+	}
+
+	val = val.Elem()
+	typ := val.Type()
+
+	for i := range val.NumField() {
+		field := val.Field(i)
+		structField := typ.Field(i)
+
+		if !field.CanSet() {
+			continue
+		}
+
+		if field.Type() == reflect.TypeOf((*multipart.FileHeader)(nil)) {
+			formTag := structField.Tag.Get("form")
+			if formTag == "" || formTag == "-" {
+				continue
+			}
+
+			formKey := strings.Split(formTag, ",")[0]
+			file, err := c.FormFile(formKey)
+			if err != nil {
+				continue
+			}
+
+			field.Set(reflect.ValueOf(file))
+		}
+	}
+
+	return nil
 }
