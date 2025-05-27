@@ -7,9 +7,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 )
 
-func Register(r *fiber.Router) {
-	router := *r
-
+func Register(router fiber.Router) {
 	router.Get(
 		"/",
 		func(c fiber.Ctx) error {

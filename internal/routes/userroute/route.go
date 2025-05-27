@@ -9,6 +9,7 @@ import (
 	"github.com/BurakYs/GoAPIExample/internal/middleware"
 	"github.com/BurakYs/GoAPIExample/internal/models"
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -17,8 +18,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Register(r *fiber.Router) {
-	router := *r
+func Register(router fiber.Router) {
+	defaultUserLimiter := limiter.New(config.BaseLimiter(config.LimiterWithMax(5)))
 
 	router.Get(
 		"/users",
@@ -60,6 +61,7 @@ func Register(r *fiber.Router) {
 			return c.Status(fiber.StatusOK).JSON(results)
 		},
 		middleware.ValidateQuery[models.GetAllUsersQuery](),
+		defaultUserLimiter,
 	)
 
 	router.Get(
@@ -87,6 +89,7 @@ func Register(r *fiber.Router) {
 			return c.Status(fiber.StatusOK).JSON(result)
 		},
 		middleware.ValidateParams[models.GetUserByIDParams](),
+		defaultUserLimiter,
 	)
 
 	router.Post(
@@ -150,6 +153,7 @@ func Register(r *fiber.Router) {
 			})
 		},
 		middleware.ValidateBody[models.RegisterUserBody](),
+		limiter.New(config.BaseLimiter(config.LimiterWithMax(1))),
 	)
 
 	router.Post(
@@ -207,6 +211,7 @@ func Register(r *fiber.Router) {
 			})
 		},
 		middleware.ValidateBody[models.LoginUserBody](),
+		limiter.New(config.BaseLimiter(config.LimiterWithMax(5))),
 	)
 
 	router.Post(
@@ -233,6 +238,7 @@ func Register(r *fiber.Router) {
 			return c.SendStatus(fiber.StatusNoContent)
 		},
 		middleware.AuthRequired(),
+		defaultUserLimiter,
 	)
 
 	router.Delete(
@@ -259,5 +265,6 @@ func Register(r *fiber.Router) {
 			return c.SendStatus(fiber.StatusNoContent)
 		},
 		middleware.AuthRequired(),
+		defaultUserLimiter,
 	)
 }

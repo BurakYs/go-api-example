@@ -44,8 +44,8 @@ func main() {
 	app.Use(recover.New(), middleware.Logger())
 
 	router := app.Group("")
-	routes.Register(&router)
-	userroute.Register(&router)
+	routes.Register(router)
+	userroute.Register(router)
 
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(models.APIError{
