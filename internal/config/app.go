@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Mode        string `env:"MODE" envDefault:"debug"` // debug or release
+	GoEnv       string `env:"GO_ENV" envDefault:"debug"` // debug or release
 	Port        string `env:"PORT,required"`
 	Domain      string `env:"DOMAIN,required"`
 	MongoDBName string `env:"MONGODB_DBNAME,required"`
@@ -18,8 +18,8 @@ type Config struct {
 var App Config
 
 const (
-	ModeDebug   = "debug"
-	ModeRelease = "release"
+	EnvDebug   = "debug"
+	EnvRelease = "release"
 )
 
 func LoadEnv() {

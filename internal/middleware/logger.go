@@ -13,7 +13,7 @@ func Logger() fiber.Handler {
 		start := time.Now()
 		ip := c.IP()
 
-		isRelease := config.App.Mode == config.ModeRelease
+		isRelease := config.App.GoEnv == config.EnvRelease
 		isLocal := ip == "127.0.0.1" || ip == "::1"
 		skip := isRelease && isLocal
 		if skip {

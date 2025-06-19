@@ -54,7 +54,7 @@ func main() {
 	})
 
 	err := app.Listen(":"+config.App.Port, fiber.ListenConfig{
-		DisableStartupMessage: config.App.Mode == config.ModeRelease,
+		DisableStartupMessage: config.App.GoEnv == config.EnvRelease,
 	})
 
 	if err != nil {
