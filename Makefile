@@ -1,16 +1,12 @@
-app_name := myapp
-main_package := ./cmd/api
+main_pkg := ./cmd/api
 
-.PHONY: run build clean
+.PHONY: run build fmt
 
 run:
-	go run $(main_package)
+	go run $(main_pkg)
 
 build:
-	go build -o $(app_name) $(main_package)
-
-clean:
-	rm -f $(app_name)
+	go build -o ./bin/ $(main_pkg)
 
 fmt:
 	go fmt ./...
