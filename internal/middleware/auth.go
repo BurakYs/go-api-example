@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 
 	"github.com/BurakYs/GoAPIExample/internal/db"
 	"github.com/BurakYs/GoAPIExample/internal/models"
@@ -20,7 +21,7 @@ func AuthRequired() fiber.Handler {
 		}
 
 		userID, err := db.Redis.Get(context.Background(), "session:"+sessionID).Result()
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return c.Status(fiber.StatusUnauthorized).JSON(models.APIError{
 				Message: "Unauthorized",
 			})

@@ -2,6 +2,8 @@ package userroute
 
 import (
 	"context"
+	"errors"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"time"
 
 	"github.com/BurakYs/GoAPIExample/internal/config"
@@ -14,15 +16,16 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func Register(router fiber.Router) {
-	defaultUserLimiter := limiter.New(config.BaseLimiter(config.LimiterWithMax(5)))
+	defaultUserLimiter := limiter.New(config.BaseLimiter(config.LimiterWithMax(50)))
 
 	router.Get(
 		"/users",
+		defaultUserLimiter,
+		middleware.ValidateQuery[models.GetAllUsersQuery](),
 		func(c fiber.Ctx) error {
 			const pageSize = 10
 
@@ -60,12 +63,12 @@ func Register(router fiber.Router) {
 
 			return c.Status(fiber.StatusOK).JSON(results)
 		},
-		middleware.ValidateQuery[models.GetAllUsersQuery](),
-		defaultUserLimiter,
 	)
 
 	router.Get(
 		"/users/:id",
+		defaultUserLimiter,
+		middleware.ValidateParams[models.GetUserByIDParams](),
 		func(c fiber.Ctx) error {
 			params := c.Locals(middleware.BindingLocationParams).(models.GetUserByIDParams)
 
@@ -75,7 +78,7 @@ func Register(router fiber.Router) {
 			}).Decode(&result)
 
 			if err != nil {
-				if err == mongo.ErrNoDocuments {
+				if errors.Is(err, mongo.ErrNoDocuments) {
 					return c.Status(fiber.StatusNotFound).JSON(models.APIError{
 						Message: "User not found",
 					})
@@ -88,12 +91,12 @@ func Register(router fiber.Router) {
 
 			return c.Status(fiber.StatusOK).JSON(result)
 		},
-		middleware.ValidateParams[models.GetUserByIDParams](),
-		defaultUserLimiter,
 	)
 
 	router.Post(
 		"/register",
+		limiter.New(config.BaseLimiter(config.LimiterWithMax(1))),
+		middleware.ValidateBody[models.RegisterUserBody](),
 		func(c fiber.Ctx) error {
 			body := c.Locals(middleware.BindingLocationBody).(models.RegisterUserBody)
 
@@ -152,12 +155,12 @@ func Register(router fiber.Router) {
 				"createdAt": createdAt,
 			})
 		},
-		middleware.ValidateBody[models.RegisterUserBody](),
-		limiter.New(config.BaseLimiter(config.LimiterWithMax(1))),
 	)
 
 	router.Post(
 		"/login",
+		limiter.New(config.BaseLimiter(config.LimiterWithMax(5))),
+		middleware.ValidateBody[models.LoginUserBody](),
 		func(c fiber.Ctx) error {
 			body := c.Locals(middleware.BindingLocationBody).(models.LoginUserBody)
 
@@ -167,7 +170,7 @@ func Register(router fiber.Router) {
 			}).Decode(&result)
 
 			if err != nil {
-				if err == mongo.ErrNoDocuments {
+				if errors.Is(err, mongo.ErrNoDocuments) {
 					return c.Status(fiber.StatusNotFound).JSON(models.APIError{
 						Message: "User not found",
 					})
@@ -210,12 +213,12 @@ func Register(router fiber.Router) {
 				"createdAt": result.CreatedAt,
 			})
 		},
-		middleware.ValidateBody[models.LoginUserBody](),
-		limiter.New(config.BaseLimiter(config.LimiterWithMax(5))),
 	)
 
 	router.Post(
 		"/logout",
+		defaultUserLimiter,
+		middleware.AuthRequired(),
 		func(c fiber.Ctx) error {
 			sessionID := c.Cookies("session_id")
 
@@ -237,12 +240,12 @@ func Register(router fiber.Router) {
 
 			return c.SendStatus(fiber.StatusNoContent)
 		},
-		middleware.AuthRequired(),
-		defaultUserLimiter,
 	)
 
 	router.Delete(
 		"/delete-account",
+		defaultUserLimiter,
+		middleware.AuthRequired(),
 		func(c fiber.Ctx) error {
 			userID := c.Locals("userID").(string)
 
@@ -251,7 +254,7 @@ func Register(router fiber.Router) {
 			}).Err()
 
 			if err != nil {
-				if err == mongo.ErrNoDocuments {
+				if errors.Is(err, mongo.ErrNoDocuments) {
 					return c.Status(fiber.StatusNotFound).JSON(models.APIError{
 						Message: "User not found",
 					})
@@ -264,7 +267,5 @@ func Register(router fiber.Router) {
 
 			return c.SendStatus(fiber.StatusNoContent)
 		},
-		middleware.AuthRequired(),
-		defaultUserLimiter,
 	)
 }

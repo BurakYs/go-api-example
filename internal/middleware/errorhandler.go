@@ -9,7 +9,7 @@ import (
 
 func ErrorHandler() fiber.ErrorHandler {
 	return func(c fiber.Ctx, err error) error {
-		log.Println(err)
+		log.Printf("%s: %v", c.Path(), err)
 		return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
 			Message: "Internal server error",
 		})
