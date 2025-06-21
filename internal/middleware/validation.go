@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"errors"
 	"fmt"
-	"mime/multipart"
 	"reflect"
 	"strings"
 
@@ -14,14 +13,11 @@ import (
 	"github.com/BurakYs/GoAPIExample/internal/models"
 )
 
-type BindingLocation string
-
 const (
-	BindingLocationBody          BindingLocation = "body"
-	BindingLocationQuery         BindingLocation = "query"
-	BindingLocationParams        BindingLocation = "params"
-	BindingLocationForm          BindingLocation = "form"
-	BindingLocationMultipartForm BindingLocation = "multipartForm"
+	BindingLocationBody   = "body"
+	BindingLocationQuery  = "query"
+	BindingLocationParams = "params"
+	BindingLocationForm   = "form"
 )
 
 func ValidateBody[T any]() fiber.Handler {
@@ -40,15 +36,11 @@ func ValidateForm[T any]() fiber.Handler {
 	return validate[T](BindingLocationForm)
 }
 
-func ValidateMultipartForm[T any]() fiber.Handler {
-	return validate[T](BindingLocationMultipartForm)
-}
-
 type transformable interface {
 	Transform()
 }
 
-func validate[T any](location BindingLocation) fiber.Handler {
+func validate[T any](location string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		var data T
 		var err error
@@ -60,18 +52,12 @@ func validate[T any](location BindingLocation) fiber.Handler {
 			err = c.Bind().Query(&data)
 		case BindingLocationParams:
 			err = c.Bind().URI(&data)
-		case BindingLocationForm, BindingLocationMultipartForm:
-			if location == BindingLocationMultipartForm {
-				err = bindFileFields(c, &data)
-			}
-
-			if err == nil {
-				err = c.Bind().Form(&data)
-			}
+		case BindingLocationForm:
+			err = c.Bind().Form(&data)
 		}
 
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, string(location), data))
+			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, location, data))
 		}
 
 		if t, ok := any(&data).(transformable); ok {
@@ -88,25 +74,21 @@ func formatValidationError(err error, location string, data any) any {
 
 	switch {
 	case errors.As(err, &ve):
-		return formatValidatorErrors(&ve, location, data)
+		failures := make([]models.ValidationFailure, 0, len(ve))
+
+		for _, fe := range ve {
+			field := getFieldName(fe.StructField(), data)
+			failures = append(failures, formatFieldError(fe, location, field))
+		}
+
+		return models.ValidationError{
+			Message:            "Invalid parameters provided",
+			ValidationFailures: failures,
+		}
 	default:
 		return models.APIError{
 			Message: "Invalid parameters provided",
 		}
-	}
-}
-
-func formatValidatorErrors(ve *validator.ValidationErrors, location string, data any) models.ValidationError {
-	failures := make([]models.ValidationFailure, 0, len(*ve))
-
-	for _, fe := range *ve {
-		field := getFieldName(fe.StructField(), data)
-		failures = append(failures, formatFieldError(fe, location, field))
-	}
-
-	return models.ValidationError{
-		Message:            "Invalid parameters provided",
-		ValidationFailures: failures,
 	}
 }
 
@@ -167,40 +149,4 @@ func getFieldName(structField string, obj any) string {
 	}
 
 	return ""
-}
-
-func bindFileFields(c fiber.Ctx, data any) error {
-	val := reflect.ValueOf(data)
-	if val.Kind() != reflect.Pointer || val.IsNil() {
-		return errors.New("data must be a non-nil pointer")
-	}
-
-	val = val.Elem()
-	typ := val.Type()
-
-	for i := range val.NumField() {
-		field := val.Field(i)
-		structField := typ.Field(i)
-
-		if !field.CanSet() {
-			continue
-		}
-
-		if field.Type() == reflect.TypeOf((*multipart.FileHeader)(nil)) {
-			formTag := structField.Tag.Get("form")
-			if formTag == "" || formTag == "-" {
-				continue
-			}
-
-			formKey := strings.Split(formTag, ",")[0]
-			file, err := c.FormFile(formKey)
-			if err != nil {
-				continue
-			}
-
-			field.Set(reflect.ValueOf(file))
-		}
-	}
-
-	return nil
 }
