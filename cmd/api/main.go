@@ -12,6 +12,7 @@ import (
 	"github.com/go-playground/validator/v10"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 )
 
@@ -41,7 +42,18 @@ func main() {
 		},
 	})
 
-	app.Use(recover.New(), middleware.Logger())
+	app.Use(
+		recover.New(),
+		logger.New(logger.Config{
+			Next: func(c fiber.Ctx) bool {
+				ip := c.IP()
+				return ip == "" || ip == "::1" || ip == "127.0.0.1"
+			},
+			Format:     "[${time}] ${ip} ${status} - ${latency} ${method} ${path} ${error}\n",
+			TimeFormat: "2006-01-02 15:04:05",
+			TimeZone:   "UTC",
+		}),
+	)
 
 	router := app.Group("")
 	routes.Register(router)

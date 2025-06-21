@@ -3,7 +3,6 @@ package userroute
 import (
 	"context"
 	"errors"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"time"
 
 	"github.com/BurakYs/GoAPIExample/internal/config"
@@ -16,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,9 +39,7 @@ func Register(router fiber.Router) {
 			)
 
 			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Error fetching users",
-				})
+				return err
 			}
 
 			defer cursor.Close(context.TODO())
@@ -84,9 +82,7 @@ func Register(router fiber.Router) {
 					})
 				}
 
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Error fetching user",
-				})
+				return err
 			}
 
 			return c.Status(fiber.StatusOK).JSON(result)
@@ -105,9 +101,7 @@ func Register(router fiber.Router) {
 
 			hashedPassword, hashErr := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
 			if hashErr != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Internal Server Error",
-				})
+				return hashErr
 			}
 
 			_, err := db.Collections.Users.InsertOne(context.TODO(), bson.M{
@@ -125,17 +119,13 @@ func Register(router fiber.Router) {
 					})
 				}
 
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Error creating user",
-				})
+				return err
 			}
 
 			sessionID := uuid.NewString()
 
 			if err := db.Redis.Set(context.TODO(), "session:"+sessionID, userID, 15*time.Minute).Err(); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Could not create session",
-				})
+				return err
 			}
 
 			c.Cookie(&fiber.Cookie{
@@ -176,9 +166,7 @@ func Register(router fiber.Router) {
 					})
 				}
 
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Error fetching user",
-				})
+				return err
 			}
 
 			compareErr := bcrypt.CompareHashAndPassword([]byte(result.Password), []byte(body.Password))
@@ -191,9 +179,7 @@ func Register(router fiber.Router) {
 			sessionID := uuid.NewString()
 
 			if err := db.Redis.Set(context.TODO(), "session:"+sessionID, result.ID, 15*time.Minute).Err(); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Could not create session",
-				})
+				return err
 			}
 
 			c.Cookie(&fiber.Cookie{
@@ -223,9 +209,7 @@ func Register(router fiber.Router) {
 			sessionID := c.Cookies("session_id")
 
 			if err := db.Redis.Del(context.TODO(), "session:"+sessionID).Err(); err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Error deleting session",
-				})
+				return err
 			}
 
 			c.Cookie(&fiber.Cookie{
@@ -260,9 +244,7 @@ func Register(router fiber.Router) {
 					})
 				}
 
-				return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-					Message: "Error deleting user",
-				})
+				return err
 			}
 
 			return c.SendStatus(fiber.StatusNoContent)
