@@ -57,7 +57,9 @@ func main() {
 
 	router := app.Group("")
 	routes.Register(router)
-	userroute.Register(router)
+
+	userController := userroute.NewUserController()
+	userroute.Register(router, userController)
 
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(models.APIError{
