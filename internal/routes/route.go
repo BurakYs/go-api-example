@@ -5,7 +5,8 @@ import (
 )
 
 func Register(router fiber.Router) {
-	router.Get(
+	router.Add(
+		[]string{"GET", "HEAD"},
 		"/",
 		func(c fiber.Ctx) error {
 			return c.SendString("OK")

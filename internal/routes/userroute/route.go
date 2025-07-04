@@ -11,14 +11,16 @@ import (
 func Register(router fiber.Router, controller *UserController) {
 	defaultUserLimiter := limiter.New(config.BaseLimiter(config.LimiterWithMax(50)))
 
-	router.Get(
+	router.Add(
+		[]string{"GET", "HEAD"},
 		"/users",
 		defaultUserLimiter,
 		middleware.ValidateQuery[models.GetAllUsersQuery](),
 		controller.GetAllUsers,
 	)
 
-	router.Get(
+	router.Add(
+		[]string{"GET", "HEAD"},
 		"/users/:id",
 		defaultUserLimiter,
 		middleware.ValidateParams[models.GetUserByIDParams](),
