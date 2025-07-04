@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"reflect"
@@ -92,7 +91,7 @@ func formatValidationError(err error, location string, data any) any {
 	}
 }
 
-func formatFieldError(fe validator.FieldError, location string, field string) models.ValidationFailure {
+func formatFieldError(fe validator.FieldError, location, field string) models.ValidationFailure {
 	msg := fmt.Sprintf("This field is invalid for tag: %s", fe.Tag())
 
 	switch fe.Tag() {
@@ -137,14 +136,12 @@ func getFieldName(structField string, obj any) string {
 	}
 
 	if f, ok := t.FieldByName(structField); ok {
-		tag := cmp.Or(f.Tag.Get("json"), f.Tag.Get("query"), f.Tag.Get("uri"), f.Tag.Get("form"), f.Tag.Get("header"), f.Tag.Get("cookie"), f.Tag.Get("cbor"), f.Tag.Get("respHeader"), f.Tag.Get("xml"))
+		tags := []string{"json", "query", "uri", "form", "header", "cookie", "cbor", "respHeader", "xml"}
 
-		if tag == "-" {
-			return ""
-		}
-
-		if tag != "" {
-			return strings.Split(tag, ",")[0]
+		for _, tag := range tags {
+			if tagValue := f.Tag.Get(tag); tagValue != "" && tagValue != "-" {
+				return strings.Split(tagValue, ",")[0]
+			}
 		}
 	}
 
