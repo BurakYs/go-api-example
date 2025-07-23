@@ -26,7 +26,7 @@ func NewUserController() *UserController {
 func (*UserController) GetAllUsers(c fiber.Ctx) error {
 	const pageSize = 10
 
-	query := c.Locals(middleware.BindingLocationQuery).(models.GetAllUsersQuery)
+	query := middleware.GetQuery[models.GetAllUsersQuery](c)
 	skip := (query.Page - 1) * pageSize
 
 	cursor, err := db.Collections.Users.Find(
@@ -60,7 +60,7 @@ func (*UserController) GetAllUsers(c fiber.Ctx) error {
 }
 
 func (*UserController) GetUserByID(c fiber.Ctx) error {
-	params := c.Locals(middleware.BindingLocationParams).(models.GetUserByIDParams)
+	params := middleware.GetParams[models.GetUserByIDParams](c)
 
 	var result models.PublicUser
 	err := db.Collections.Users.FindOne(context.TODO(), bson.M{
@@ -81,7 +81,7 @@ func (*UserController) GetUserByID(c fiber.Ctx) error {
 }
 
 func (*UserController) Register(c fiber.Ctx) error {
-	body := c.Locals(middleware.BindingLocationBody).(models.RegisterUserBody)
+	body := middleware.GetBody[models.RegisterUserBody](c)
 
 	userID := uuid.NewString()
 	createdAt := time.Now().Format(time.RFC3339)
@@ -134,7 +134,7 @@ func (*UserController) Register(c fiber.Ctx) error {
 }
 
 func (*UserController) Login(c fiber.Ctx) error {
-	body := c.Locals(middleware.BindingLocationBody).(models.LoginUserBody)
+	body := middleware.GetBody[models.LoginUserBody](c)
 
 	var result models.User
 	err := db.Collections.Users.FindOne(context.TODO(), bson.M{

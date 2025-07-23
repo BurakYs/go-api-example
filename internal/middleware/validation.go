@@ -13,26 +13,42 @@ import (
 )
 
 const (
-	BindingLocationBody   = "body"
-	BindingLocationQuery  = "query"
-	BindingLocationParams = "params"
-	BindingLocationForm   = "form"
+	bindingLocationBody   = "body"
+	bindingLocationQuery  = "query"
+	bindingLocationParams = "params"
+	bindingLocationForm   = "form"
 )
 
 func ValidateBody[T any]() fiber.Handler {
-	return validate[T](BindingLocationBody)
+	return validate[T](bindingLocationBody)
+}
+
+func GetBody[T any](c fiber.Ctx) *T {
+	return c.Locals(bindingLocationBody).(*T)
 }
 
 func ValidateQuery[T any]() fiber.Handler {
-	return validate[T](BindingLocationQuery)
+	return validate[T](bindingLocationQuery)
+}
+
+func GetQuery[T any](c fiber.Ctx) *T {
+	return c.Locals(bindingLocationQuery).(*T)
 }
 
 func ValidateParams[T any]() fiber.Handler {
-	return validate[T](BindingLocationParams)
+	return validate[T](bindingLocationParams)
+}
+
+func GetParams[T any](c fiber.Ctx) *T {
+	return c.Locals(bindingLocationParams).(*T)
 }
 
 func ValidateForm[T any]() fiber.Handler {
-	return validate[T](BindingLocationForm)
+	return validate[T](bindingLocationForm)
+}
+
+func GetForm[T any](c fiber.Ctx) *T {
+	return c.Locals(bindingLocationForm).(*T)
 }
 
 type transformable interface {
@@ -41,25 +57,25 @@ type transformable interface {
 
 func validate[T any](location string) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		var data T
+		data := new(T)
 		var err error
 
 		switch location {
-		case BindingLocationBody:
-			err = c.Bind().Body(&data)
-		case BindingLocationQuery:
-			err = c.Bind().Query(&data)
-		case BindingLocationParams:
-			err = c.Bind().URI(&data)
-		case BindingLocationForm:
-			err = c.Bind().Form(&data)
+		case bindingLocationBody:
+			err = c.Bind().Body(data)
+		case bindingLocationQuery:
+			err = c.Bind().Query(data)
+		case bindingLocationParams:
+			err = c.Bind().URI(data)
+		case bindingLocationForm:
+			err = c.Bind().Form(data)
 		}
 
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, location, data))
 		}
 
-		if t, ok := any(&data).(transformable); ok {
+		if t, ok := any(data).(transformable); ok {
 			t.Transform()
 		}
 
@@ -91,8 +107,24 @@ func formatValidationError(err error, location string, data any) any {
 	}
 }
 
+func getFieldName(structField string, obj any) string {
+	t := reflect.TypeOf(obj).Elem()
+
+	if f, ok := t.FieldByName(structField); ok {
+		tags := []string{"json", "query", "uri", "form", "header", "cookie", "cbor", "respHeader", "xml"}
+
+		for _, tag := range tags {
+			if tagValue := f.Tag.Get(tag); tagValue != "" && tagValue != "-" {
+				return strings.Split(tagValue, ",")[0]
+			}
+		}
+	}
+
+	return structField
+}
+
 func formatFieldError(fe validator.FieldError, location, field string) models.ValidationFailure {
-	msg := fmt.Sprintf("This field is invalid for tag: %s", fe.Tag())
+	var msg string
 
 	switch fe.Tag() {
 	case "required":
@@ -119,6 +151,8 @@ func formatFieldError(fe validator.FieldError, location, field string) models.Va
 		default:
 			msg = fmt.Sprintf("The value must be at most %s", fe.Param())
 		}
+	default:
+		msg = fmt.Sprintf("This field is invalid for tag: %s", fe.Tag())
 	}
 
 	return models.ValidationFailure{
@@ -126,24 +160,4 @@ func formatFieldError(fe validator.FieldError, location, field string) models.Va
 		Field:    field,
 		Message:  msg,
 	}
-}
-
-func getFieldName(structField string, obj any) string {
-	t := reflect.TypeOf(obj)
-
-	if t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-
-	if f, ok := t.FieldByName(structField); ok {
-		tags := []string{"json", "query", "uri", "form", "header", "cookie", "cbor", "respHeader", "xml"}
-
-		for _, tag := range tags {
-			if tagValue := f.Tag.Get(tag); tagValue != "" && tagValue != "-" {
-				return strings.Split(tagValue, ",")[0]
-			}
-		}
-	}
-
-	return ""
 }

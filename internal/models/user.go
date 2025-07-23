@@ -25,9 +25,9 @@ type GetUserByIDParams struct {
 }
 
 type RegisterUserBody struct {
-	Username string `json:"username" binding:"required" validate:"min=3,max=20"`
-	Email    string `json:"email" binding:"required" validate:"email"`
-	Password string `json:"password" binding:"required" validate:"min=8,max=20"`
+	Username string `json:"username" validate:"required,min=3,max=20"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8,max=20"`
 }
 
 func (b *RegisterUserBody) Transform() {
@@ -36,8 +36,8 @@ func (b *RegisterUserBody) Transform() {
 }
 
 type LoginUserBody struct {
-	Email    string `json:"email" binding:"required" validate:"email"`
-	Password string `json:"password" binding:"required" validate:"min=8,max=20"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8,max=20"`
 }
 
 func (b *LoginUserBody) Transform() {
