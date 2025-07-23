@@ -1,7 +1,6 @@
 # Go Fiber Auth API
 
 A simple REST API with basic session-based user authentication features like registration and login.  
-I'm currently learning Go with this project.  
 
 ## 🚧 To-Do
 
