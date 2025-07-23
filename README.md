@@ -5,7 +5,6 @@ I'm currently learning Go with this project.
 
 ## 🚧 To-Do
 
-- Use proper contexts in MongoDB calls
 - Add tests
 
 ## 🔧 Tech Stack
