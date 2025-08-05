@@ -28,13 +28,13 @@ func (v *structValidator) Validate(i any) error {
 func main() {
 	config.LoadEnv()
 
+	db.SetupMongo()
+	db.SetupRedis()
+
 	defer func() {
 		db.DisconnectMongo()
 		db.DisconnectRedis()
 	}()
-
-	db.SetupMongo()
-	db.SetupRedis()
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler:  middleware.ErrorHandler(),
