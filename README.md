@@ -1,12 +1,8 @@
 # Go Fiber Auth API
 
-A simple REST API with basic session-based user authentication features like registration and login.  
+A simple REST API with basic session-based user authentication.
 
-## 🚧 To-Do
-
-- Add tests
-
-## 🔧 Tech Stack
+## 🔧 Stack
 
 - Go
 - Fiber
@@ -18,5 +14,5 @@ A simple REST API with basic session-based user authentication features like reg
 ```bash
 git clone https://github.com/BurakYs/GoAPIExample.git go-fiber
 cd go-fiber
-cp .env.template .env
+cp .env.example .env
 ```

@@ -8,6 +8,7 @@ import (
 	"github.com/BurakYs/GoAPIExample/internal/middleware"
 	"github.com/BurakYs/GoAPIExample/internal/models"
 	"github.com/BurakYs/GoAPIExample/internal/routes"
+	"github.com/BurakYs/GoAPIExample/internal/routes/authroute"
 	"github.com/BurakYs/GoAPIExample/internal/routes/userroute"
 	"github.com/go-playground/validator/v10"
 
@@ -27,12 +28,13 @@ func (v *structValidator) Validate(i any) error {
 func main() {
 	config.LoadEnv()
 
-	db.SetupMongo()
-	db.SetupRedis()
-
 	defer func() {
 		db.DisconnectMongo()
+		db.DisconnectRedis()
 	}()
+
+	db.SetupMongo()
+	db.SetupRedis()
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler:  middleware.ErrorHandler(),
@@ -45,10 +47,6 @@ func main() {
 	app.Use(
 		recover.New(),
 		logger.New(logger.Config{
-			Next: func(c fiber.Ctx) bool {
-				ip := c.IP()
-				return ip == "" || ip == "::1" || ip == "127.0.0.1"
-			},
 			Format:     "[${time}] ${ip} ${status} - ${latency} ${method} ${path} ${error}\n",
 			TimeFormat: "2006-01-02 15:04:05",
 			TimeZone:   "UTC",
@@ -58,8 +56,14 @@ func main() {
 	router := app.Group("")
 	routes.Register(router)
 
-	userController := userroute.NewUserController()
+	usersCollection := db.GetCollection("users")
+
+	userController := userroute.NewUserController(usersCollection)
 	userroute.Register(router, userController)
+
+	authGroup := router.Group("/auth")
+	authController := authroute.NewAuthController(usersCollection)
+	authroute.Register(authGroup, authController)
 
 	app.Use(func(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(models.APIError{
@@ -67,8 +71,10 @@ func main() {
 		})
 	})
 
+	log.Println("Listening on http://localhost:" + config.App.Port)
+
 	err := app.Listen(":"+config.App.Port, fiber.ListenConfig{
-		DisableStartupMessage: config.App.GoEnv == config.EnvRelease,
+		DisableStartupMessage: true,
 	})
 
 	if err != nil {

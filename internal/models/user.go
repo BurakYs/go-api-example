@@ -1,13 +1,17 @@
 package models
 
-import "strings"
+import (
+	"strings"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
 
 type User struct {
-	ID        string `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	CreatedAt string `json:"createdAt"`
+	ID        bson.ObjectID `json:"id" bson:"_id"`
+	Username  string        `json:"username" bson:"username"`
+	Email     string        `json:"email" bson:"email"`
+	Password  string        `json:"password" bson:"password"`
+	CreatedAt bson.DateTime `json:"createdAt" bson:"created_at"`
 }
 
 type PublicUser struct {
@@ -21,7 +25,7 @@ type GetAllUsersQuery struct {
 }
 
 type GetUserByIDParams struct {
-	ID string `uri:"id" validate:"required,uuid"`
+	ID string `uri:"id" validate:"required"`
 }
 
 type RegisterUserBody struct {

@@ -1,4 +1,4 @@
-package config
+package middleware
 
 import (
 	"time"
@@ -10,7 +10,7 @@ import (
 
 type LimiterOption func(*limiter.Config)
 
-func BaseLimiter(opts ...LimiterOption) limiter.Config {
+func NewLimiter(opts ...LimiterOption) limiter.Config {
 	cfg := limiter.Config{
 		Max:        250,
 		Expiration: time.Minute,
@@ -31,11 +31,5 @@ func BaseLimiter(opts ...LimiterOption) limiter.Config {
 func LimiterWithMax(max int) LimiterOption {
 	return func(cfg *limiter.Config) {
 		cfg.Max = max
-	}
-}
-
-func LimiterWithExpiration(d time.Duration) LimiterOption {
-	return func(cfg *limiter.Config) {
-		cfg.Expiration = d
 	}
 }

@@ -3,21 +3,14 @@ package db
 import (
 	"context"
 	"log"
-	"time"
 
 	"github.com/BurakYs/GoAPIExample/internal/config"
 
-	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var Mongo *mongo.Client
-var Collections = struct {
-	Users *mongo.Collection
-}{
-	Users: nil,
-}
+var mongoClient *mongo.Client
 
 func SetupMongo() {
 	client, err := mongo.Connect(options.Client().ApplyURI(config.App.MongoURI))
@@ -25,38 +18,13 @@ func SetupMongo() {
 		log.Fatalln("Failed to connect to MongoDB:", err)
 	}
 
-	Mongo = client
-
-	Collections.Users = getCollection("users")
-
-	_, err = Collections.Users.Indexes().CreateMany(context.Background(), []mongo.IndexModel{
-		{
-			Keys:    bson.M{"email": 1},
-			Options: options.Index().SetUnique(true),
-		},
-		{
-			Keys:    bson.M{"username": 1},
-			Options: options.Index().SetUnique(true),
-		},
-	})
-
-	if err != nil {
-		log.Fatalln("Error creating indexes:", err)
-	}
+	mongoClient = client
 }
 
-func DisconnectMongo() error {
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := Mongo.Disconnect(timeoutCtx); err != nil {
-		log.Println("Error disconnecting from MongoDB:", err)
-		return err
-	}
-
-	return nil
+func DisconnectMongo() {
+	mongoClient.Disconnect(context.Background())
 }
 
-func getCollection(name string) *mongo.Collection {
-	return Mongo.Database(config.App.MongoDBName).Collection(name)
+func GetCollection(name string) *mongo.Collection {
+	return mongoClient.Database(config.App.MongoDBName).Collection(name)
 }

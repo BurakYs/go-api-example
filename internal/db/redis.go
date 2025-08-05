@@ -19,3 +19,7 @@ func SetupRedis() {
 		log.Fatalln("Failed to connect to Redis:", err)
 	}
 }
+
+func DisconnectRedis() {
+	Redis.Close()
+}
