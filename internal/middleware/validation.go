@@ -87,23 +87,22 @@ func validate[T any](location string) fiber.Handler {
 func formatValidationError(err error, location string, data any) any {
 	var ve validator.ValidationErrors
 
-	switch {
-	case errors.As(err, &ve):
-		failures := make([]models.ValidationFailure, 0, len(ve))
-
-		for _, fe := range ve {
-			field := getFieldName(fe.StructField(), data)
-			failures = append(failures, formatFieldError(fe, location, field))
-		}
-
-		return models.ValidationError{
-			Message:            "Invalid parameters provided",
-			ValidationFailures: failures,
-		}
-	default:
+	if !errors.As(err, &ve) {
 		return models.APIError{
 			Message: "Invalid parameters provided",
 		}
+	}
+
+	failures := make([]models.ValidationFailure, 0, len(ve))
+
+	for _, fe := range ve {
+		field := getFieldName(fe.StructField(), data)
+		failures = append(failures, formatFieldError(fe, location, field))
+	}
+
+	return models.ValidationError{
+		Message:            "Invalid parameters provided",
+		ValidationFailures: failures,
 	}
 }
 
