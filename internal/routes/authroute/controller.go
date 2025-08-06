@@ -140,15 +140,6 @@ func (uc *AuthController) Logout(c fiber.Ctx) error {
 		return err
 	}
 
-	c.Cookie(&fiber.Cookie{
-		Name:     "session_id",
-		Value:    "",
-		MaxAge:   -1,
-		Path:     "/",
-		Domain:   config.App.Domain,
-		Secure:   true,
-		HTTPOnly: true,
-	})
-
+	c.ClearCookie("session_id")
 	return c.SendStatus(fiber.StatusNoContent)
 }
