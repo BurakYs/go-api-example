@@ -1,83 +1,85 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 
 	"github.com/BurakYs/GoAPIExample/internal/config"
-	"github.com/BurakYs/GoAPIExample/internal/db"
-	"github.com/BurakYs/GoAPIExample/internal/middleware"
-	"github.com/BurakYs/GoAPIExample/internal/models"
-	"github.com/BurakYs/GoAPIExample/internal/routes"
-	"github.com/BurakYs/GoAPIExample/internal/routes/authroute"
-	"github.com/BurakYs/GoAPIExample/internal/routes/userroute"
-	"github.com/go-playground/validator/v10"
-
-	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/logger"
-	"github.com/gofiber/fiber/v3/middleware/recover"
+	"github.com/BurakYs/GoAPIExample/internal/database"
+	"github.com/BurakYs/GoAPIExample/internal/handlers/authhandler"
+	"github.com/BurakYs/GoAPIExample/internal/handlers/userhandler"
+	"github.com/BurakYs/GoAPIExample/internal/repository/authrepository"
+	"github.com/BurakYs/GoAPIExample/internal/repository/userrepository"
+	"github.com/BurakYs/GoAPIExample/internal/services/authservice"
+	"github.com/BurakYs/GoAPIExample/internal/services/userservice"
+	"github.com/joho/godotenv"
 )
 
-type structValidator struct {
-	validator *validator.Validate
-}
+type dependencies struct {
+	DB    *database.MongoDB
+	Redis *database.Redis
 
-func (v *structValidator) Validate(i any) error {
-	return v.validator.Struct(i)
+	AuthHandler *authhandler.AuthHandler
+	UserHandler *userhandler.UserHandler
 }
 
 func main() {
-	config.LoadEnv()
+	if err := godotenv.Load(); err != nil {
+		log.Fatalln(".env file not found")
+	}
 
-	db.SetupMongo()
-	db.SetupRedis()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalln("Failed to load env config:", err)
+	}
 
-	defer func() {
-		db.DisconnectMongo()
-		db.DisconnectRedis()
-	}()
+	fmt.Printf("%+v\n", cfg)
 
-	app := fiber.New(fiber.Config{
-		ErrorHandler:  middleware.ErrorHandler(),
-		CaseSensitive: true,
-		StructValidator: &structValidator{
-			validator: validator.New(),
-		},
-	})
+	deps, cleanup, err := initDeps(cfg)
+	if err != nil {
+		log.Fatalln("Failed to initialize app", err)
+	}
 
-	app.Use(
-		recover.New(),
-		logger.New(logger.Config{
-			Format:     "[${time}] ${ip} ${status} - ${latency} ${method} ${path} ${error}\n",
-			TimeFormat: "2006-01-02 15:04:05",
-			TimeZone:   "UTC",
-		}),
-	)
+	defer cleanup()
 
-	router := app.Group("")
-	routes.Register(router)
-
-	usersCollection := db.GetCollection("users")
-
-	userController := userroute.NewUserController(usersCollection)
-	userroute.Register(router, userController)
-
-	authGroup := router.Group("/auth")
-	authController := authroute.NewAuthController(usersCollection)
-	authroute.Register(authGroup, authController)
-
-	app.Use(func(c fiber.Ctx) error {
-		return c.Status(fiber.StatusNotFound).JSON(models.APIError{
-			Message: "Not Found",
-		})
-	})
-
-	log.Println("Listening on http://localhost:" + config.App.Port)
-
-	err := app.Listen(":"+config.App.Port, fiber.ListenConfig{
-		DisableStartupMessage: true,
-	})
+	app := newServer()
+	app.setupRoutes(deps)
+	err = app.listen(cfg.App.Port)
 
 	if err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func initDeps(cfg *config.Config) (*dependencies, func(), error) {
+	db, err := database.NewMongoDB(cfg.Database.URI, cfg.Database.Name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	redis, err := database.NewRedis(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.DB)
+	if err != nil {
+		return nil, func() { db.Disconnect(context.Background()) }, err
+	}
+
+	authRepository := authrepository.NewAuthRepository(db.Database(), redis)
+	authService := authservice.NewAuthService(authRepository, cfg.App.Domain)
+
+	userRepository := userrepository.NewUserRepository(db.Database())
+	userService := userservice.NewUserService(userRepository)
+
+	deps := &dependencies{
+		DB:          db,
+		Redis:       redis,
+		AuthHandler: authhandler.NewAuthHandler(authService),
+		UserHandler: userhandler.NewUserHandler(userService),
+	}
+
+	cleanup := func() {
+		redis.Close()
+		db.Disconnect(context.Background())
+	}
+
+	return deps, cleanup, nil
 }

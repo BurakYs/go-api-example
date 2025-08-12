@@ -9,6 +9,11 @@ A simple REST API with basic session-based user authentication.
 - MongoDB
 - Redis
 
+## 🏗️ Architecture
+
+- Uses dependency injection to manage dependencies.
+- Uses the repository pattern to separate data access from business logic.
+
 ### Setup the Project
 
 ```bash

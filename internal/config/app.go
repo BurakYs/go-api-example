@@ -1,33 +1,35 @@
 package config
 
-import (
-	"log"
-
-	"github.com/caarlos0/env/v11"
-	"github.com/joho/godotenv"
-)
+import "github.com/caarlos0/env/v11"
 
 type Config struct {
-	GoEnv       string `env:"GO_ENV" envDefault:"debug"` // debug or release
-	Port        string `env:"PORT,required"`
-	Domain      string `env:"DOMAIN,required"`
-	MongoDBName string `env:"MONGODB_DBNAME,required"`
-	MongoURI    string `env:"MONGODB_URI,required"`
+	App      AppConfig
+	Database DatabaseConfig
+	Redis    RedisConfig
 }
 
-var App Config
+type AppConfig struct {
+	GoEnv  string `env:"GO_ENV" envDefault:"debug"` // debug or release
+	Port   string `env:"PORT" envDefault:"8080"`
+	Domain string `env:"DOMAIN,required"`
+}
 
-const (
-	EnvDebug   = "debug"
-	EnvRelease = "release"
-)
+type DatabaseConfig struct {
+	Name string `env:"MONGODB_DBNAME,required"`
+	URI  string `env:"MONGODB_URI,required"`
+}
 
-func LoadEnv() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatalln("Invalid .env file")
+type RedisConfig struct {
+	Host string `env:"REDIS_HOST,required"`
+	Port string `env:"REDIS_PORT,required"`
+	DB   int    `env:"REDIS_DB,required"`
+}
+
+func Load() (*Config, error) {
+	var config Config
+	if err := env.Parse(&config); err != nil {
+		return nil, err
 	}
 
-	if err := env.Parse(&App); err != nil {
-		log.Fatalln("Failed to parse the .env file:", err)
-	}
+	return &config, nil
 }

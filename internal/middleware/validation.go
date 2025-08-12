@@ -19,77 +19,59 @@ const (
 	bindingLocationForm   = "form"
 )
 
-func ValidateBody[T any]() fiber.Handler {
-	return validate[T](bindingLocationBody)
+func ValidateBody[T any](c fiber.Ctx) (*T, bool) {
+	return validate[T](c, bindingLocationBody)
 }
 
-func GetBody[T any](c fiber.Ctx) *T {
-	return c.Locals(bindingLocationBody).(*T)
+func ValidateQuery[T any](c fiber.Ctx) (*T, bool) {
+	return validate[T](c, bindingLocationQuery)
 }
 
-func ValidateQuery[T any]() fiber.Handler {
-	return validate[T](bindingLocationQuery)
+func ValidateParams[T any](c fiber.Ctx) (*T, bool) {
+	return validate[T](c, bindingLocationParams)
 }
 
-func GetQuery[T any](c fiber.Ctx) *T {
-	return c.Locals(bindingLocationQuery).(*T)
-}
-
-func ValidateParams[T any]() fiber.Handler {
-	return validate[T](bindingLocationParams)
-}
-
-func GetParams[T any](c fiber.Ctx) *T {
-	return c.Locals(bindingLocationParams).(*T)
-}
-
-func ValidateForm[T any]() fiber.Handler {
-	return validate[T](bindingLocationForm)
-}
-
-func GetForm[T any](c fiber.Ctx) *T {
-	return c.Locals(bindingLocationForm).(*T)
+func ValidateForm[T any](c fiber.Ctx) (*T, bool) {
+	return validate[T](c, bindingLocationForm)
 }
 
 type transformable interface {
 	Transform()
 }
 
-func validate[T any](location string) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		data := new(T)
-		var err error
+func validate[T any](c fiber.Ctx, location string) (*T, bool) {
+	data := new(T)
+	var err error
 
-		switch location {
-		case bindingLocationBody:
-			err = c.Bind().Body(data)
-		case bindingLocationQuery:
-			err = c.Bind().Query(data)
-		case bindingLocationParams:
-			err = c.Bind().URI(data)
-		case bindingLocationForm:
-			err = c.Bind().Form(data)
-		}
-
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, location, data))
-		}
-
-		if t, ok := any(data).(transformable); ok {
-			t.Transform()
-		}
-
-		c.Locals(location, data)
-		return c.Next()
+	switch location {
+	case bindingLocationBody:
+		err = c.Bind().Body(data)
+	case bindingLocationQuery:
+		err = c.Bind().Query(data)
+	case bindingLocationParams:
+		err = c.Bind().URI(data)
+	case bindingLocationForm:
+		err = c.Bind().Form(data)
 	}
+
+	if err != nil {
+		c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, location, data))
+		return data, false
+	}
+
+	if t, ok := any(data).(transformable); ok {
+		t.Transform()
+	}
+
+	return data, true
 }
 
-func formatValidationError(err error, location string, data any) any {
+func formatValidationError(err error, location string, data any) models.ValidationError {
 	var ve validator.ValidationErrors
-
 	if !errors.As(err, &ve) {
-		return models.APIError{
-			Message: "Invalid parameters provided",
+		return models.ValidationError{
+			Message:            "Invalid parameters provided",
+			ValidationFailures: []models.ValidationFailure{},
 		}
 	}
 
@@ -106,8 +88,8 @@ func formatValidationError(err error, location string, data any) any {
 	}
 }
 
-func getFieldName(structField string, obj any) string {
-	t := reflect.TypeOf(obj).Elem()
+func getFieldName(structField string, data any) string {
+	t := reflect.TypeOf(data).Elem()
 
 	if f, ok := t.FieldByName(structField); ok {
 		tags := []string{"json", "query", "uri", "form", "header", "cookie", "cbor", "respHeader", "xml"}
