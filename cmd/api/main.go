@@ -2,17 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 
-	"github.com/BurakYs/GoAPIExample/internal/config"
-	"github.com/BurakYs/GoAPIExample/internal/database"
-	"github.com/BurakYs/GoAPIExample/internal/handlers/authhandler"
-	"github.com/BurakYs/GoAPIExample/internal/handlers/userhandler"
-	"github.com/BurakYs/GoAPIExample/internal/repository/authrepository"
-	"github.com/BurakYs/GoAPIExample/internal/repository/userrepository"
-	"github.com/BurakYs/GoAPIExample/internal/services/authservice"
-	"github.com/BurakYs/GoAPIExample/internal/services/userservice"
+	"github.com/BurakYs/go-api-example/internal/config"
+	"github.com/BurakYs/go-api-example/internal/database"
+	"github.com/BurakYs/go-api-example/internal/handlers/authhandler"
+	"github.com/BurakYs/go-api-example/internal/handlers/userhandler"
+	"github.com/BurakYs/go-api-example/internal/repository/authrepository"
+	"github.com/BurakYs/go-api-example/internal/repository/userrepository"
+	"github.com/BurakYs/go-api-example/internal/services/authservice"
+	"github.com/BurakYs/go-api-example/internal/services/userservice"
 	"github.com/joho/godotenv"
 )
 
@@ -33,8 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to load env config:", err)
 	}
-
-	fmt.Printf("%+v\n", cfg)
 
 	deps, cleanup, err := initDeps(cfg)
 	if err != nil {

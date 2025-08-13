@@ -3,7 +3,7 @@ package middleware
 import (
 	"log"
 
-	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/go-api-example/internal/models"
 	"github.com/gofiber/fiber/v3"
 )
 

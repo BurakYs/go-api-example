@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/BurakYs/GoAPIExample/internal/database"
-	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/go-api-example/internal/database"
+	"github.com/BurakYs/go-api-example/internal/models"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"

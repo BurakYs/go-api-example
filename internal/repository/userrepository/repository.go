@@ -3,7 +3,7 @@ package userrepository
 import (
 	"context"
 
-	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/go-api-example/internal/models"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"

@@ -9,7 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/BurakYs/GoAPIExample/internal/models"
+	"github.com/BurakYs/go-api-example/internal/models"
 )
 
 const (

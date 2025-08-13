@@ -1,4 +1,4 @@
-module github.com/BurakYs/GoAPIExample
+module github.com/BurakYs/go-api-example
 
 go 1.24.5
 

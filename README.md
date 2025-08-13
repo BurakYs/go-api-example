@@ -1,4 +1,4 @@
-# Go Fiber Auth API
+# Go API Example
 
 A simple REST API with basic session-based user authentication.
 
@@ -14,10 +14,10 @@ A simple REST API with basic session-based user authentication.
 - Uses dependency injection to manage dependencies.
 - Uses the repository pattern to separate data access from business logic.
 
-### Setup the Project
+## 🛠️ Setup the Project
 
-```bash
-git clone https://github.com/BurakYs/GoAPIExample.git go-fiber
-cd go-fiber
+```sh
+git clone https://github.com/BurakYs/go-api-example.git
+cd go-api-example
 cp .env.example .env
 ```

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/BurakYs/GoAPIExample/internal/models"
-	"github.com/BurakYs/GoAPIExample/internal/repository/authrepository"
+	"github.com/BurakYs/go-api-example/internal/models"
+	"github.com/BurakYs/go-api-example/internal/repository/authrepository"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )

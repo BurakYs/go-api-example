@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/BurakYs/GoAPIExample/internal/middleware"
-	"github.com/BurakYs/GoAPIExample/internal/models"
-	"github.com/BurakYs/GoAPIExample/internal/services/authservice"
+	"github.com/BurakYs/go-api-example/internal/middleware"
+	"github.com/BurakYs/go-api-example/internal/models"
+	"github.com/BurakYs/go-api-example/internal/services/authservice"
 	"github.com/gofiber/fiber/v3"
 )
 
