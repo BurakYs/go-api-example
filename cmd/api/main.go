@@ -35,7 +35,7 @@ func main() {
 
 	deps, cleanup, err := initDeps(cfg)
 	if err != nil {
-		log.Fatalln("Failed to initialize app", err)
+		log.Fatalln("Failed to initialize app:", err)
 	}
 
 	defer cleanup()

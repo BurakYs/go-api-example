@@ -1,6 +1,6 @@
 module github.com/BurakYs/go-api-example
 
-go 1.24.5
+go 1.25
 
 require (
 	github.com/caarlos0/env/v11 v11.3.1
@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.0.0-beta.5
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
-	go.mongodb.org/mongo-driver/v2 v2.2.3
+	go.mongodb.org/mongo-driver/v2 v2.3.0
 )
 
 require (
