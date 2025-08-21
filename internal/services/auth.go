@@ -1,4 +1,4 @@
-package authservice
+package services
 
 import (
 	"context"
@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/BurakYs/go-api-example/internal/models"
-	"github.com/BurakYs/go-api-example/internal/repository/authrepository"
+	"github.com/BurakYs/go-api-example/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	repo   *authrepository.AuthRepository
+	repo   *repository.AuthRepository
 	domain string
 }
 
-func NewAuthService(repo *authrepository.AuthRepository, domain string) *AuthService {
+func NewAuthService(repo *repository.AuthRepository, domain string) *AuthService {
 	return &AuthService{
 		repo:   repo,
 		domain: domain,

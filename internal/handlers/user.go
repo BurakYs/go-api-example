@@ -1,19 +1,19 @@
-package userhandler
+package handlers
 
 import (
 	"errors"
 
 	"github.com/BurakYs/go-api-example/internal/middleware"
 	"github.com/BurakYs/go-api-example/internal/models"
-	"github.com/BurakYs/go-api-example/internal/services/userservice"
+	"github.com/BurakYs/go-api-example/internal/services"
 	"github.com/gofiber/fiber/v3"
 )
 
 type UserHandler struct {
-	service *userservice.UserService
+	service *services.UserService
 }
 
-func NewUserHandler(service *userservice.UserService) *UserHandler {
+func NewUserHandler(service *services.UserService) *UserHandler {
 	return &UserHandler{
 		service: service,
 	}

@@ -1,4 +1,4 @@
-package userservice
+package services
 
 import (
 	"context"
@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/BurakYs/go-api-example/internal/models"
-	"github.com/BurakYs/go-api-example/internal/repository/userrepository"
+	"github.com/BurakYs/go-api-example/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type UserService struct {
-	repo *userrepository.UserRepository
+	repo *repository.UserRepository
 }
 
-func NewUserService(repo *userrepository.UserRepository) *UserService {
+func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{
 		repo: repo,
 	}

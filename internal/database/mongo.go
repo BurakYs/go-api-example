@@ -26,11 +26,9 @@ func NewMongoDB(uri, dbName string) (*MongoDB, error) {
 		return nil, err
 	}
 
-	database := client.Database(dbName)
-
 	return &MongoDB{
 		client:   client,
-		database: database,
+		database: client.Database(dbName),
 	}, nil
 }
 

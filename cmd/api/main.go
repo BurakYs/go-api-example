@@ -6,12 +6,9 @@ import (
 
 	"github.com/BurakYs/go-api-example/internal/config"
 	"github.com/BurakYs/go-api-example/internal/database"
-	"github.com/BurakYs/go-api-example/internal/handlers/authhandler"
-	"github.com/BurakYs/go-api-example/internal/handlers/userhandler"
-	"github.com/BurakYs/go-api-example/internal/repository/authrepository"
-	"github.com/BurakYs/go-api-example/internal/repository/userrepository"
-	"github.com/BurakYs/go-api-example/internal/services/authservice"
-	"github.com/BurakYs/go-api-example/internal/services/userservice"
+	"github.com/BurakYs/go-api-example/internal/handlers"
+	"github.com/BurakYs/go-api-example/internal/repository"
+	"github.com/BurakYs/go-api-example/internal/services"
 	"github.com/joho/godotenv"
 )
 
@@ -19,8 +16,8 @@ type dependencies struct {
 	DB    *database.MongoDB
 	Redis *database.Redis
 
-	AuthHandler *authhandler.AuthHandler
-	UserHandler *userhandler.UserHandler
+	AuthHandler *handlers.AuthHandler
+	UserHandler *handlers.UserHandler
 }
 
 func main() {
@@ -60,17 +57,17 @@ func initDeps(cfg *config.Config) (*dependencies, func(), error) {
 		return nil, func() { db.Disconnect(context.Background()) }, err
 	}
 
-	authRepository := authrepository.NewAuthRepository(db.Database(), redis)
-	authService := authservice.NewAuthService(authRepository, cfg.App.Domain)
+	authRepository := repository.NewAuthRepository(db.Database(), redis)
+	authService := services.NewAuthService(authRepository, cfg.App.Domain)
 
-	userRepository := userrepository.NewUserRepository(db.Database())
-	userService := userservice.NewUserService(userRepository)
+	userRepository := repository.NewUserRepository(db.Database())
+	userService := services.NewUserService(userRepository)
 
 	deps := &dependencies{
 		DB:          db,
 		Redis:       redis,
-		AuthHandler: authhandler.NewAuthHandler(authService),
-		UserHandler: userhandler.NewUserHandler(userService),
+		AuthHandler: handlers.NewAuthHandler(authService),
+		UserHandler: handlers.NewUserHandler(userService),
 	}
 
 	cleanup := func() {

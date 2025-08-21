@@ -1,4 +1,4 @@
-package authhandler
+package handlers
 
 import (
 	"errors"
@@ -6,15 +6,15 @@ import (
 
 	"github.com/BurakYs/go-api-example/internal/middleware"
 	"github.com/BurakYs/go-api-example/internal/models"
-	"github.com/BurakYs/go-api-example/internal/services/authservice"
+	"github.com/BurakYs/go-api-example/internal/services"
 	"github.com/gofiber/fiber/v3"
 )
 
 type AuthHandler struct {
-	service *authservice.AuthService
+	service *services.AuthService
 }
 
-func NewAuthHandler(service *authservice.AuthService) *AuthHandler {
+func NewAuthHandler(service *services.AuthService) *AuthHandler {
 	return &AuthHandler{
 		service: service,
 	}

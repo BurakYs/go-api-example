@@ -55,7 +55,7 @@ func validate[T any](c fiber.Ctx, location string) (*T, bool) {
 	}
 
 	if err != nil {
-		c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, location, data))
+		_ = c.Status(fiber.StatusBadRequest).JSON(formatValidationError(err, location, data))
 		return data, false
 	}
 
