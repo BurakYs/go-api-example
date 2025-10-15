@@ -1,107 +1,73 @@
 package main
 
 import (
-	"log"
+	"context"
 
-	"github.com/BurakYs/go-api-example/internal/middleware"
-	"github.com/BurakYs/go-api-example/internal/models"
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/limiter"
-	"github.com/gofiber/fiber/v3/middleware/logger"
+	loggermi "github.com/gofiber/fiber/v3/middleware/logger"
 	"github.com/gofiber/fiber/v3/middleware/recover"
+	"go.uber.org/zap"
+
+	"github.com/BurakYs/go-api-example/internal/httperror"
+	"github.com/BurakYs/go-api-example/internal/middleware"
 )
 
-type structValidator struct {
-	validator *validator.Validate
-}
-
-func (v *structValidator) Validate(i any) error {
-	return v.validator.Struct(i)
-}
-
-type server struct {
+type Server struct {
 	app *fiber.App
 }
 
-func newServer() *server {
+func NewServer(logger *zap.Logger) *Server {
 	app := fiber.New(fiber.Config{
-		ErrorHandler:  middleware.ErrorHandler(),
+		ErrorHandler:  middleware.ErrorHandler,
 		CaseSensitive: true,
-		StructValidator: &structValidator{
-			validator: validator.New(),
-		},
 	})
 
 	app.Use(
 		recover.New(),
-		logger.New(logger.Config{
-			Format:     "[${time}] ${ip} ${status} - ${latency} ${method} ${path} ${error}\n",
-			TimeFormat: "2006-01-02 15:04:05",
-			TimeZone:   "UTC",
+		loggermi.New(loggermi.Config{
+			LoggerFunc: func(c fiber.Ctx, data *loggermi.Data, _ loggermi.Config) error {
+				logger.Info("HTTP Request",
+					zap.String("ip", c.IP()),
+					zap.Int("status", c.Response().StatusCode()),
+					zap.Duration("latency", data.Stop.Sub(data.Start)),
+					zap.String("method", c.Method()),
+					zap.String("path", c.OriginalURL()),
+					zap.NamedError("error", data.ChainErr),
+				)
+				return nil
+			},
 		}),
 	)
 
-	return &server{
+	return &Server{
 		app: app,
 	}
 }
 
-func (s *server) setupRoutes(deps *dependencies) {
+func (s *Server) SetupRoutes(deps *Dependencies) {
 	s.app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("OK")
 	})
 
-	authGroup := s.app.Group("/auth")
-	authGroup.Post(
-		"/login",
-		limiter.New(middleware.NewLimiter(middleware.LimiterWithMax(5))),
-		deps.AuthHandler.Login,
-	)
+	auth := s.app.Group("/auth")
+	auth.Post("/register", deps.RateLimiter.Middleware(), deps.UserHandler.Register)
+	auth.Post("/login", deps.RateLimiter.Middleware(), deps.UserHandler.Login)
+	auth.Post("/logout", deps.RequireAuth.Middleware(), deps.UserHandler.Logout)
 
-	authGroup.Post(
-		"/logout",
-		limiter.New(middleware.NewLimiter(middleware.LimiterWithMax(5))),
-		middleware.AuthRequired(deps.Redis),
-		deps.AuthHandler.Logout,
-	)
-
-	authGroup.Post(
-		"/register",
-		limiter.New(middleware.NewLimiter(middleware.LimiterWithMax(3))),
-		deps.AuthHandler.Register,
-	)
-
-	authGroup.Delete(
-		"/delete-account",
-		middleware.AuthRequired(deps.Redis),
-		deps.AuthHandler.DeleteAccount,
-	)
-
-	userGroup := s.app.Group("/users")
-	userGroup.Get(
-		"/",
-		limiter.New(middleware.NewLimiter(middleware.LimiterWithMax(50))),
-		deps.UserHandler.GetAll,
-	)
-
-	userGroup.Get(
-		"/:id",
-		limiter.New(middleware.NewLimiter(middleware.LimiterWithMax(50))),
-		deps.UserHandler.GetByID,
-	)
+	users := s.app.Group("/users")
+	users.Get("/me", deps.RequireAuth.Middleware(), deps.UserHandler.Me)
 
 	s.app.Use(func(c fiber.Ctx) error {
-		return c.Status(fiber.StatusNotFound).JSON(models.APIError{
-			Message: "Page not found",
-		})
+		return httperror.New(fiber.StatusNotFound, "Page not found")
 	})
 }
 
-func (s *server) listen(port string) error {
-	log.Println("Listening on http://localhost:" + port)
-
+func (s *Server) Listen(port string) error {
 	return s.app.Listen(":"+port, fiber.ListenConfig{
 		DisableStartupMessage: true,
 	})
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.app.ShutdownWithContext(ctx)
 }

@@ -2,78 +2,95 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 
 	"github.com/BurakYs/go-api-example/internal/config"
 	"github.com/BurakYs/go-api-example/internal/database"
-	"github.com/BurakYs/go-api-example/internal/handlers"
-	"github.com/BurakYs/go-api-example/internal/repository"
-	"github.com/BurakYs/go-api-example/internal/services"
-	"github.com/joho/godotenv"
+	loggerpkg "github.com/BurakYs/go-api-example/internal/logger"
 )
 
-type dependencies struct {
-	DB    *database.MongoDB
-	Redis *database.Redis
-
-	AuthHandler *handlers.AuthHandler
-	UserHandler *handlers.UserHandler
-}
-
 func main() {
-	if err := godotenv.Load(); err != nil {
+	err := godotenv.Load()
+	if err != nil {
 		log.Fatalln(".env file not found")
 	}
 
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalln("Failed to load env config:", err)
+		log.Fatalln("Failed to load configuration:", err)
 	}
 
-	deps, cleanup, err := initDeps(cfg)
+	logger := loggerpkg.New(cfg.App.LogLevel)
+	defer func() {
+		err := logger.Sync()
+		if err != nil {
+			fmt.Println("Failed to sync logger:", err)
+		}
+	}()
+
+	db, err := database.NewDB(cfg.Database.URI, cfg.Database.Name)
 	if err != nil {
-		log.Fatalln("Failed to initialize app:", err)
+		logger.Fatal("Failed to connect to DB", zap.Error(err))
 	}
 
-	defer cleanup()
+	defer func() {
+		err := db.Disconnect(context.Background())
+		if err != nil {
+			logger.Error("Failed to disconnect from DB", zap.Error(err))
+		}
+	}()
 
-	app := newServer()
-	app.setupRoutes(deps)
-	err = app.listen(cfg.App.Port)
-
+	redis, err := database.NewRedis(&cfg.Redis)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal("Failed to connect to Redis", zap.Error(err))
 	}
+
+	defer func() {
+		err := redis.Close()
+		if err != nil {
+			logger.Error("Failed to close Redis connection", zap.Error(err))
+		}
+	}()
+
+	deps := NewDependencies(cfg, db, redis, logger)
+	err = deps.Init()
+	if err != nil {
+		logger.Fatal("Failed to initialize dependencies", zap.Error(err))
+	}
+
+	server := NewServer(logger)
+	server.SetupRoutes(deps)
+
+	go func(port string) {
+		logger.Info("Listening on http://localhost:" + port)
+
+		err = server.Listen(port)
+		if err != nil {
+			logger.Fatal("Failed to start server", zap.Error(err))
+		}
+	}(cfg.App.Port)
+
+	gracefulShutdown(server, logger)
 }
 
-func initDeps(cfg *config.Config) (*dependencies, func(), error) {
-	db, err := database.NewMongoDB(cfg.Database.URI, cfg.Database.Name)
+func gracefulShutdown(server *Server, logger *zap.Logger) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	err := server.Shutdown(ctx)
 	if err != nil {
-		return nil, nil, err
+		logger.Fatal("Failed to gracefully shutdown server", zap.Error(err))
 	}
-
-	redis, err := database.NewRedis(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.DB)
-	if err != nil {
-		return nil, func() { db.Disconnect(context.Background()) }, err
-	}
-
-	authRepository := repository.NewAuthRepository(db.Database(), redis)
-	authService := services.NewAuthService(authRepository, cfg.App.Domain)
-
-	userRepository := repository.NewUserRepository(db.Database())
-	userService := services.NewUserService(userRepository)
-
-	deps := &dependencies{
-		DB:          db,
-		Redis:       redis,
-		AuthHandler: handlers.NewAuthHandler(authService),
-		UserHandler: handlers.NewUserHandler(userService),
-	}
-
-	cleanup := func() {
-		redis.Close()
-		db.Disconnect(context.Background())
-	}
-
-	return deps, cleanup, nil
 }

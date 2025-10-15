@@ -1,17 +1,22 @@
 package middleware
 
 import (
-	"log"
+	"errors"
 
-	"github.com/BurakYs/go-api-example/internal/models"
 	"github.com/gofiber/fiber/v3"
+
+	"github.com/BurakYs/go-api-example/internal/httperror"
 )
 
-func ErrorHandler() fiber.ErrorHandler {
-	return func(c fiber.Ctx, err error) error {
-		log.Printf("%s: %v", c.Path(), err)
-		return c.Status(fiber.StatusInternalServerError).JSON(models.APIError{
-			Message: "Internal server error",
+func ErrorHandler(c fiber.Ctx, err error) error {
+	var httpErr *httperror.HTTPError
+	if errors.As(err, &httpErr) {
+		return c.Status(httpErr.Code).JSON(httperror.HTTPError{
+			Message: httpErr.Message,
 		})
 	}
+
+	return c.Status(fiber.StatusInternalServerError).JSON(httperror.HTTPError{
+		Message: "Internal server error",
+	})
 }

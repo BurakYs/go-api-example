@@ -8,13 +8,13 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-type MongoDB struct {
+type DB struct {
 	client   *mongo.Client
 	database *mongo.Database
 }
 
-func NewMongoDB(uri, dbName string) (*MongoDB, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func NewDB(uri, dbName string) (*DB, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	client, err := mongo.Connect(options.Client().ApplyURI(uri))
@@ -22,20 +22,21 @@ func NewMongoDB(uri, dbName string) (*MongoDB, error) {
 		return nil, err
 	}
 
-	if err := client.Ping(ctx, nil); err != nil {
+	err = client.Ping(ctx, nil)
+	if err != nil {
 		return nil, err
 	}
 
-	return &MongoDB{
+	return &DB{
 		client:   client,
 		database: client.Database(dbName),
 	}, nil
 }
 
-func (m *MongoDB) Database() *mongo.Database {
-	return m.database
+func (d *DB) GetCollection(name string) *mongo.Collection {
+	return d.database.Collection(name)
 }
 
-func (m *MongoDB) Disconnect(ctx context.Context) error {
-	return m.client.Disconnect(ctx)
+func (d *DB) Disconnect(ctx context.Context) error {
+	return d.client.Disconnect(ctx)
 }

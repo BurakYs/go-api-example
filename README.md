@@ -1,23 +1,24 @@
 # Go API Example
 
-A simple REST API with basic session-based user authentication.
+A simple Go API example with layered architecture and dependency injection
 
-## 🔧 Stack
+## 🚀 Stack
 
-- Go
 - Fiber
 - MongoDB
 - Redis
 
-## 🏗️ Architecture
+## 📂 Project Structure
 
-- Uses dependency injection to manage dependencies.
-- Uses the repository pattern to separate data access from business logic.
-
-## 🛠️ Setup the Project
-
-```sh
-git clone https://github.com/BurakYs/go-api-example.git
-cd go-api-example
-cp .env.example .env
+```
+go-api-example/
+├── cmd/
+└── internal/
+    ├── app/
+    ├── config/
+    ├── database/
+    ├── httperror/
+    ├── logger/
+    ├── middleware/
+    ├── util/
 ```

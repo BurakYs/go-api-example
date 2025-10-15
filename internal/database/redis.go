@@ -2,36 +2,35 @@ package database
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/BurakYs/go-api-example/internal/config"
 )
 
 type Redis struct {
 	client *redis.Client
 }
 
-func NewRedis(host, port string, db int) (*Redis, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:%s", host, port),
-		DB:   db,
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func NewRedis(cfg *config.RedisConfig) (*Redis, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	client := redis.NewClient(&redis.Options{
+		Addr:     cfg.Host + ":" + cfg.Port,
+		Password: cfg.Password,
+		DB:       cfg.DB,
+	})
+
+	err := client.Ping(ctx).Err()
+	if err != nil {
+		return nil, err
 	}
 
 	return &Redis{
 		client: client,
 	}, nil
-}
-
-func (r *Redis) Client() *redis.Client {
-	return r.client
 }
 
 func (r *Redis) Close() error {
@@ -46,14 +45,22 @@ func (r *Redis) Get(ctx context.Context, key string) (string, error) {
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *Redis) Add(ctx context.Context, key string, value any) error {
-	return r.client.SAdd(ctx, key, value).Err()
-}
-
 func (r *Redis) Del(ctx context.Context, keys ...string) error {
 	return r.client.Del(ctx, keys...).Err()
 }
 
-func (r *Redis) Members(ctx context.Context, key string) ([]string, error) {
+func (r *Redis) SAdd(ctx context.Context, key string, members ...string) error {
+	return r.client.SAdd(ctx, key, members).Err()
+}
+
+func (r *Redis) SRem(ctx context.Context, key string, members ...string) error {
+	return r.client.SRem(ctx, key, members).Err()
+}
+
+func (r *Redis) SMembers(ctx context.Context, key string) ([]string, error) {
 	return r.client.SMembers(ctx, key).Result()
+}
+
+func (r *Redis) EvalScript(ctx context.Context, script *redis.Script, keys []string, args ...any) ([]int64, error) {
+	return script.Run(ctx, r.client, keys, args...).Int64Slice()
 }
