@@ -48,7 +48,7 @@ func main() {
 		}
 	}()
 
-	redis, err := database.NewRedis(&cfg.Redis)
+	redis, err := database.NewRedis(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB)
 	if err != nil {
 		logger.Fatal("Failed to connect to Redis", zap.Error(err))
 	}

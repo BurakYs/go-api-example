@@ -5,22 +5,20 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-
-	"github.com/BurakYs/go-api-example/config"
 )
 
 type Redis struct {
 	client *redis.Client
 }
 
-func NewRedis(cfg *config.RedisConfig) (*Redis, error) {
+func NewRedis(host, port, password string, db int) (*Redis, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Host + ":" + cfg.Port,
-		Password: cfg.Password,
-		DB:       cfg.DB,
+		Addr:     host + ":" + port,
+		Password: password,
+		DB:       db,
 	})
 
 	err := client.Ping(ctx).Err()
@@ -49,11 +47,11 @@ func (r *Redis) Del(ctx context.Context, keys ...string) error {
 	return r.client.Del(ctx, keys...).Err()
 }
 
-func (r *Redis) SAdd(ctx context.Context, key string, members ...string) error {
+func (r *Redis) SAdd(ctx context.Context, key string, members ...any) error {
 	return r.client.SAdd(ctx, key, members).Err()
 }
 
-func (r *Redis) SRem(ctx context.Context, key string, members ...string) error {
+func (r *Redis) SRem(ctx context.Context, key string, members ...any) error {
 	return r.client.SRem(ctx, key, members).Err()
 }
 
