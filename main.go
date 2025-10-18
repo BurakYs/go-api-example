@@ -12,9 +12,9 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
-	"github.com/BurakYs/go-api-example/internal/config"
-	"github.com/BurakYs/go-api-example/internal/database"
-	loggerpkg "github.com/BurakYs/go-api-example/internal/logger"
+	"github.com/BurakYs/go-api-example/config"
+	"github.com/BurakYs/go-api-example/database"
+	loggerpkg "github.com/BurakYs/go-api-example/logger"
 )
 
 func main() {

@@ -5,12 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/BurakYs/go-api-example/internal/database"
+	"github.com/BurakYs/go-api-example/database"
 	"github.com/gofiber/fiber/v3"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
-	"github.com/BurakYs/go-api-example/internal/httperror"
+	"github.com/BurakYs/go-api-example/httperror"
 )
 
 var (

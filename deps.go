@@ -8,11 +8,11 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"go.uber.org/zap"
 
-	"github.com/BurakYs/go-api-example/internal/app/session"
-	"github.com/BurakYs/go-api-example/internal/app/user"
-	"github.com/BurakYs/go-api-example/internal/config"
-	"github.com/BurakYs/go-api-example/internal/database"
-	"github.com/BurakYs/go-api-example/internal/middleware"
+	"github.com/BurakYs/go-api-example/app/session"
+	"github.com/BurakYs/go-api-example/app/user"
+	"github.com/BurakYs/go-api-example/config"
+	"github.com/BurakYs/go-api-example/database"
+	"github.com/BurakYs/go-api-example/middleware"
 )
 
 type Dependencies struct {

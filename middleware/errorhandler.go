@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/BurakYs/go-api-example/internal/httperror"
+	"github.com/BurakYs/go-api-example/httperror"
 )
 
 func ErrorHandler(c fiber.Ctx, err error) error {

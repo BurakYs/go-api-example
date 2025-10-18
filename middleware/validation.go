@@ -6,8 +6,8 @@ import (
 	govalidator "github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/BurakYs/go-api-example/internal/httperror"
-	"github.com/BurakYs/go-api-example/internal/util/validator"
+	"github.com/BurakYs/go-api-example/httperror"
+	"github.com/BurakYs/go-api-example/util/validator"
 )
 
 var val = validator.New()

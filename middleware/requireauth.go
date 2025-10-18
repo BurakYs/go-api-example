@@ -5,9 +5,9 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
-	"github.com/BurakYs/go-api-example/internal/app/session"
-	"github.com/BurakYs/go-api-example/internal/httperror"
-	"github.com/BurakYs/go-api-example/internal/util/rctx"
+	"github.com/BurakYs/go-api-example/app/session"
+	"github.com/BurakYs/go-api-example/httperror"
+	"github.com/BurakYs/go-api-example/util/rctx"
 )
 
 type RequireAuth struct {

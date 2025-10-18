@@ -8,8 +8,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"go.uber.org/zap"
 
-	"github.com/BurakYs/go-api-example/internal/httperror"
-	"github.com/BurakYs/go-api-example/internal/middleware"
+	"github.com/BurakYs/go-api-example/httperror"
+	"github.com/BurakYs/go-api-example/middleware"
 )
 
 type Server struct {

@@ -1,17 +1,11 @@
-main_pkg := ./cmd/api
-
-.PHONY: run build lint fmt
+.PHONY: run build fmt
 
 run:
-	go run $(main_pkg)
+	go run .
 
 build:
-	go build -o ./bin/ $(main_pkg)
-
-lint:
-	golangci-lint run
+	go build -o ./bin/ .
 
 fmt:
 	go mod tidy
 	go fmt ./...
-	golangci-lint fmt

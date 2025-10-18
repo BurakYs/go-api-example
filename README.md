@@ -12,13 +12,11 @@ A simple Go API example with layered architecture and dependency injection
 
 ```
 go-api-example/
-├── cmd/
-└── internal/
-    ├── app/
-    ├── config/
-    ├── database/
-    ├── httperror/
-    ├── logger/
-    ├── middleware/
-    ├── util/
+├── app/
+├── config/
+├── database/
+├── httperror/
+├── logger/
+├── middleware/
+└── util/
 ```

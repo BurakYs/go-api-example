@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/BurakYs/go-api-example/internal/database"
+	"github.com/BurakYs/go-api-example/database"
 )
 
 type Repository struct {
