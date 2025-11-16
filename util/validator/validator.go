@@ -9,17 +9,6 @@ import (
 	govalidator "github.com/go-playground/validator/v10"
 )
 
-type ValidationFailure struct {
-	Location string `json:"location"`
-	Field    string `json:"field"`
-	Message  string `json:"error"`
-}
-
-type ValidationError struct {
-	Message  string              `json:"error"`
-	Failures []ValidationFailure `json:"validationFailures"`
-}
-
 func New() *govalidator.Validate {
 	validate := govalidator.New()
 
@@ -49,23 +38,7 @@ func New() *govalidator.Validate {
 	return validate
 }
 
-func ToResponse(ve govalidator.ValidationErrors, location string) ValidationError {
-	failures := make([]ValidationFailure, len(ve))
-	for i, fieldError := range ve {
-		failures[i] = ValidationFailure{
-			Location: location,
-			Field:    fieldError.Field(),
-			Message:  getErrorMessage(fieldError),
-		}
-	}
-
-	return ValidationError{
-		Message:  "Invalid parameters provided",
-		Failures: failures,
-	}
-}
-
-func getErrorMessage(fieldError govalidator.FieldError) string {
+func GetErrorMessage(fieldError govalidator.FieldError) string {
 	switch fieldError.Tag() {
 	case "required":
 		return "This field is required"

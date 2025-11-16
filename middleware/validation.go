@@ -10,6 +10,12 @@ import (
 	"github.com/BurakYs/go-api-example/util/validator"
 )
 
+type ValidationFailure struct {
+	Location string `json:"location"`
+	Field    string `json:"field"`
+	Message  string `json:"error"`
+}
+
 var val = validator.New()
 
 const (
@@ -19,19 +25,19 @@ const (
 	bindingForm   = "form"
 )
 
-func ValidateBody[T any](c fiber.Ctx) (*T, bool) {
+func ValidateBody[T any](c fiber.Ctx) (*T, error) {
 	return validate[T](c, bindingBody)
 }
 
-func ValidateQuery[T any](c fiber.Ctx) (*T, bool) {
+func ValidateQuery[T any](c fiber.Ctx) (*T, error) {
 	return validate[T](c, bindingQuery)
 }
 
-func ValidateParams[T any](c fiber.Ctx) (*T, bool) {
+func ValidateParams[T any](c fiber.Ctx) (*T, error) {
 	return validate[T](c, bindingParams)
 }
 
-func ValidateForm[T any](c fiber.Ctx) (*T, bool) {
+func ValidateForm[T any](c fiber.Ctx) (*T, error) {
 	return validate[T](c, bindingForm)
 }
 
@@ -39,7 +45,7 @@ type normalizable interface {
 	Normalize()
 }
 
-func validate[T any](c fiber.Ctx, location string) (*T, bool) {
+func validate[T any](c fiber.Ctx, location string) (*T, error) {
 	data := new(T)
 	var err error
 
@@ -55,8 +61,7 @@ func validate[T any](c fiber.Ctx, location string) (*T, bool) {
 	}
 
 	if err != nil {
-		_ = c.Status(fiber.StatusBadRequest).JSON(httperror.HTTPError{Message: "Invalid request data"})
-		return data, false
+		return data, httperror.New(fiber.StatusBadRequest, "Invalid parameters provided").WithExtra("validationFailures", []ValidationFailure{})
 	}
 
 	if n, ok := any(data).(normalizable); ok {
@@ -67,13 +72,20 @@ func validate[T any](c fiber.Ctx, location string) (*T, bool) {
 	if err != nil {
 		var ve govalidator.ValidationErrors
 		if errors.As(err, &ve) {
-			_ = c.Status(fiber.StatusBadRequest).JSON(validator.ToResponse(ve, location))
-		} else {
-			_ = c.Status(fiber.StatusBadRequest).JSON(httperror.HTTPError{Message: "Invalid request data"})
+			failures := make([]ValidationFailure, len(ve))
+			for i, fieldError := range ve {
+				failures[i] = ValidationFailure{
+					Location: location,
+					Field:    fieldError.Field(),
+					Message:  validator.GetErrorMessage(fieldError),
+				}
+			}
+
+			return data, httperror.New(fiber.StatusBadRequest, "Invalid parameters provided").WithExtra("validationFailures", failures)
 		}
 
-		return data, false
+		return data, httperror.New(fiber.StatusBadRequest, "Invalid parameters provided").WithExtra("validationFailures", []ValidationFailure{})
 	}
 
-	return data, true
+	return data, nil
 }

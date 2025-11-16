@@ -11,9 +11,7 @@ import (
 func ErrorHandler(c fiber.Ctx, err error) error {
 	var httpErr *httperror.HTTPError
 	if errors.As(err, &httpErr) {
-		return c.Status(httpErr.Code).JSON(httperror.HTTPError{
-			Message: httpErr.Message,
-		})
+		return c.Status(httpErr.Code).JSON(httpErr)
 	}
 
 	return c.Status(fiber.StatusInternalServerError).JSON(httperror.HTTPError{

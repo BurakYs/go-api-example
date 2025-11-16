@@ -27,9 +27,9 @@ func NewHandler(svc *Service, sessionSvc *session.Service, cookieCfg *config.Coo
 }
 
 func (h *Handler) Register(c fiber.Ctx) error {
-	body, ok := middleware.ValidateBody[RegistrationBody](c)
-	if !ok {
-		return nil
+	body, err := middleware.ValidateBody[RegistrationBody](c)
+	if err != nil {
+		return err
 	}
 
 	user, err := h.svc.Register(c, body.Name, body.Email, body.Password)
@@ -47,9 +47,9 @@ func (h *Handler) Register(c fiber.Ctx) error {
 }
 
 func (h *Handler) Login(c fiber.Ctx) error {
-	body, ok := middleware.ValidateBody[LoginBody](c)
-	if !ok {
-		return nil
+	body, err := middleware.ValidateBody[LoginBody](c)
+	if err != nil {
+		return err
 	}
 
 	user, err := h.svc.Login(c, body.Email, body.Password)
