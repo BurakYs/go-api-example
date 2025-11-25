@@ -30,7 +30,7 @@ func (r *Repository) Create(ctx context.Context, userID string, expiration time.
 		return "", err
 	}
 
-	err = r.redis.SAdd(ctx, r.userSetKey(userID), sessionID)
+	err = r.redis.Client().SAdd(ctx, r.userSetKey(userID), sessionID).Err()
 	if err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ func (r *Repository) Delete(ctx context.Context, sessionID string) error {
 		return err
 	}
 
-	err = r.redis.SRem(ctx, r.userSetKey(userID), sessionID)
+	err = r.redis.Client().SRem(ctx, r.userSetKey(userID), sessionID).Err()
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (r *Repository) Delete(ctx context.Context, sessionID string) error {
 func (r *Repository) DeleteAllForUser(ctx context.Context, userID string) error {
 	setKey := r.userSetKey(userID)
 
-	ids, err := r.redis.SMembers(ctx, setKey)
+	ids, err := r.redis.Client().SMembers(ctx, setKey).Result()
 	if err != nil {
 		return err
 	}

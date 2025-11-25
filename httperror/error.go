@@ -1,6 +1,9 @@
 package httperror
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"maps"
+)
 
 type HTTPError struct {
 	Code    int            `json:"-"`
@@ -18,10 +21,7 @@ func (e *HTTPError) MarshalJSON() ([]byte, error) {
 		"error": e.Message,
 	}
 
-	for k, v := range e.Extra {
-		result[k] = v
-	}
-
+	maps.Copy(result, e.Extra)
 	return json.Marshal(result)
 }
 

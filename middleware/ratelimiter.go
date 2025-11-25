@@ -120,7 +120,7 @@ func (b *RateLimiterBuilder) Middleware() fiber.Handler {
 		key := []string{b.config.KeyFunc(c)}
 		now := time.Now().UTC().UnixMilli()
 
-		result, err := b.rateLimiter.redis.EvalScript(c, script, key, b.config.Max, windowSecs, now)
+		result, err := script.Run(c, b.rateLimiter.redis.Client(), key, b.config.Max, windowSecs, now).Int64Slice()
 		if err != nil {
 			return err
 		}
