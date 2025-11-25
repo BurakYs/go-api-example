@@ -25,7 +25,7 @@ func NewServer(logger *zap.Logger) *Server {
 	app.Use(
 		recover.New(),
 		loggermi.New(loggermi.Config{
-			LoggerFunc: func(c fiber.Ctx, data *loggermi.Data, _ loggermi.Config) error {
+			LoggerFunc: func(c fiber.Ctx, data *loggermi.Data, _ *loggermi.Config) error {
 				logger.Info("HTTP Request",
 					zap.String("ip", c.IP()),
 					zap.Int("status", c.Response().StatusCode()),
